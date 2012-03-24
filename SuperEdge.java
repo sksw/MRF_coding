@@ -1,274 +1,173 @@
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public class SuperEdge {
 	
-	public SuperNode N1; //node pointers
-	public SuperNode N2;
-	
-	public ArrayList<Edge> E; //edges between supernodes
-	
-	public double[] m12; //messages
-	public double[] m21;
-	public boolean[] m12d; //message calculated?
-	public boolean[] m21d;
+	public SuperNode N1; //supernode 1
+	public SuperNode N2; //supernode 2
+	public int r; //range of values for 1 node
+	public ArrayList<Edge> E; //internal edge list (edges between supernodes)
+	public double[] m12; //message from supernode 1 --> 2
+	public double[] m21; //message from supernode 2 --> 1
+	public boolean m12d; //message already computed?
+	public boolean m21d;
 	
 	public SuperEdge (SuperNode P1, SuperNode P2, ArrayList<Edge> e, int range){
 		N1 = P1;
 		N2 = P2;
+		r = range;
 		E = new ArrayList<Edge>(0);
+		findInternalEdges(e);
+		m12 = new double[(int)Math.pow(r,E.size())];
+		m21 = new double[(int)Math.pow(r,E.size())];
+		m12d = false;
+		m21d = false;
+		attach();
+	}
+	
+	//find edges internal to the supernode from list
+	public void findInternalEdges(ArrayList<Edge> e){
 		for(int i=0; i<e.size(); i++)
+			//each end need to be in respective nodes
 			if( (N1.V.contains(e.get(i).n1) && N2.V.contains(e.get(i).n2)) || 
 					(N1.V.contains(e.get(i).n2) && N2.V.contains(e.get(i).n1)) )
 				E.add(e.get(i));
-		m12 = new double[(int)Math.pow(range,E.size())];
-		m21 = new double[(int)Math.pow(range,E.size())];
-		m12d = new boolean[(int)Math.pow(range,E.size())];
-		m21d = new boolean[(int)Math.pow(range,E.size())];
-		N1.dN.add(this);
-		N2.dN.add(this);
 	}
 	
-	public double epot(String Val1, String Val2){
-		//Strings Val1 and Val2 should be in order of values for supernodes N1 and N2 
-		//size of the Strings should match size of edge list
+	//edge-potential function
+	public double epot(String V1, String V2){
 		double pot = 1.0;
-		//multiply all self potential of individual nodes
-		for(int i=0; i<E.size(); i++){
-			if(N1.V.contains(E.get(i).n1))
-				pot = pot*E.get(i).epot(
-						Integer.parseInt(Val1.substring(N1.V.indexOf(E.get(i).n1),N1.V.indexOf(E.get(i).n1)+1)),
-						Integer.parseInt(Val2.substring(N2.V.indexOf(E.get(i).n2),N2.V.indexOf(E.get(i).n2)+1)));
-			else
-				//node n1 of the edge is in N2 actually (so to get the value of n1, we need to search in N2)
-				//note that n1 is still in first term of epot function (just N1 is switched to N2), this is because epot function for edges preserves order
-				pot = pot*E.get(i).epot(
-						Integer.parseInt(Val2.substring(N2.V.indexOf(E.get(i).n1),N2.V.indexOf(E.get(i).n1)+1)),
-						Integer.parseInt(Val1.substring(N1.V.indexOf(E.get(i).n2),N1.V.indexOf(E.get(i).n2)+1)));
-			
-			//original
-			//pot = pot*E.get(i).epot(Integer.parseInt(Val1.substring(i,i+1)),Integer.parseInt(Val2.substring(i,i+1)));
-		}
+		//multiply all edge potentials
+		for(int i=0; i<E.size(); i++)
+			pot = pot * E.get(i).epot( Integer.parseInt(V1.substring(i,i+1),r) , Integer.parseInt(V2.substring(i,i+1),r) );
 		return pot;
 	}
 
-
-	//BP WITH MESSAGE NORMALIZATION - BAD
-
-	public double get_m12(String LX2, int ref, boolean fresh){
-		//values at supernode 2 may not be all needed, check for required values only
-		//IMPORTANT NOTE: for this to work, the LX2 string must be of same order as node list in supernode
-		String X2 = "";
-		for(int i=0; i<E.size(); i++){
-			if(N2.V.contains(E.get(i).n1)) //node 1 of edge is in supernode 2
-				X2 = X2 + LX2.substring(N2.V.indexOf(E.get(i).n1),N2.V.indexOf(E.get(i).n1)+1);
-			else //node 2 of edge is in supernode 2
-				X2 = X2 + LX2.substring(N2.V.indexOf(E.get(i).n2),N2.V.indexOf(E.get(i).n2)+1);
-		}
-		//System.out.println("m_"+n1.id+"-->"+n2.id);
-		//calculate only if message has not already been computed
-		if(!m12d[Integer.parseInt(X2,2)] || fresh){
+	//message from node 1 to node 2
+	public double get_m12(String N2_VAL, int ref, boolean fresh){
+		String X1,X2, N1_VAL;
+		//----- compute message if not already done or if want new calculation
+		if(!m12d || fresh){
 			double temp;
-			for(int i=0; i<m12.length; i++)
-				m12[i] = 0.0;
-			//leaf node stopping condition (node 1 is a leaf node)
-			if(N1.dN.size()==1){
-				//System.out.print(" LEAF ");
-				//for each value of node 2
-				for(int j=0; j<m12.length; j++)
-					//sum over alphabet size (values of node 1)
-					for(int i=0; i<m12.length; i++)
-						m12[i] = m12[i] + N1.npot(Utilities.intToPBS(j,N1.V.size()),false)*epot(Utilities.intToPBS(j,N1.V.size()),Utilities.intToPBS(i,N2.V.size()));
-			}
-			else{
-				//for each value of node 2
-				for(int i=0; i<m12.length; i++){
-					//sum over alphabet size (values of node 1)
-					for(int j=0; j<m12.length; j++){
+			Arrays.fill(m12,0.0);
+			for(int i=0; i<m12.length; i++){ //for each configuration of edge ends in supernode 2
+				X2 = Utilities.toPString(i,E.size(),r);
+				for(int j=0; j<(int)Math.pow(r,N1.V.size()); j++){ //sum over configurations of supernode 1 - must use "false" when calculating npot or we will skew calculations
+					N1_VAL = Utilities.toPString(j,N1.V.size(),r);
+					X1 = N1_edgeEndVector(N1_VAL);
+					//----- leaf node stopping condition (supernode 1 is a leaf node)
+					if(N1.dN.size()==1)
+						m12[i] = m12[i] + N1.npot(N1_VAL,false) * epot(X1,X2);
+						//System.out.println("\t("+N1_VAL+")"+N1.npot(N1_VAL,false)+": "+"("+X1+","+X2+")"+epot(X1,X2));
+					//----- not stopping, must recursively find more messages
+					else{
 						temp = 1.0;
-						//product over messages from neighbours of node 1 excluding node 2 
-						for(int k=0; k<N1.dN.size(); k++){
-							//ignore message node 2 by comparing if edge object reference the same
+						for(int k=0; k<N1.dN.size(); k++) //product over messages from neighbours of supernode 1 excluding supernode 2 
 							if(N1.dN.get(k)!=N2.dN.get(ref))
-								//find "child" node of node 1
 								if(N1.dN.get(k).N1.id!=N1.id)
-									temp = temp*N1.dN.get(k).get_m12(Utilities.intToPBS(j,N1.V.size()),k,fresh);
+									temp = temp * N1.dN.get(k).get_m12(N1_VAL,k,fresh);
 								else
-									temp = temp*N1.dN.get(k).get_m21(Utilities.intToPBS(j,N1.V.size()),k,fresh);
-						}
-						m12[i] = m12[i] + epot(Utilities.intToPBS(j,N1.V.size()),Utilities.intToPBS(i,N2.V.size()))*N1.npot(Utilities.intToPBS(j,N1.V.size()),false)*temp;
+									temp = temp * N1.dN.get(k).get_m21(N1_VAL,k,fresh);
+						m12[i] = m12[i] + epot(X1,X2) * N1.npot(N1_VAL,false) * temp;
 					}
 				}
 			}
-			//normalization
-			double sum = 0.0;
-			for(int i=0; i<m12.length; i++)
-				sum = sum + m12[i];
-			for(int i=0; i<m12.length; i++)
-				m12[i] = m12[i]/sum;
-			
-			for(int i=0; i<m12d.length; i++)
-				m12d[i] = true;
+			//----- normalization
+			Utilities.normalize(m12);
+			//----- set calculated flag to true
+			m12d = true;
 		}
-		//System.out.println(m12[x2]);
-		return m12[Integer.parseInt(X2,2)];
+		X2 = N2_edgeEndVector(N2_VAL);
+		//System.out.println(N1.id+"-->"+N2.id+" ("+N2_VAL+") "+(!m12d || fresh));
+		//System.out.println(X2+": "+m12[Integer.parseInt(X2,r)]);
+		return m12[Integer.parseInt(X2,r)];
 	}
 	
 	//message from node 2 to node 1
-	public double get_m21(String LX1, int ref, boolean fresh){
-		//values at supernode ` may not be all needed, check for required values only
-		//IMPORTANT NOTE: for this to work, the LX2 string must be of same order as node list in supernode
-		String X1 = "";
-		for(int i=0; i<E.size(); i++){
-			if(N1.V.contains(E.get(i).n1)) //node 1 of edge is in supernode 1
-				X1 = X1 + LX1.substring(N1.V.indexOf(E.get(i).n1),N1.V.indexOf(E.get(i).n1)+1);
-			else //node 2 of edge is in supernode 1
-				X1 = X1 + LX1.substring(N1.V.indexOf(E.get(i).n2),N1.V.indexOf(E.get(i).n2)+1);
-		}
-		
-		//System.out.println("m_"+n2.id+"-->"+n1.id);
-		//calculate only if message has not already been computed
-		if(!m21d[Integer.parseInt(X1,2)] || fresh){
+	public double get_m21(String N1_VAL, int ref, boolean fresh){
+		String X1,X2, N2_VAL;
+		//----- compute message if not already done or if want new calculation
+		if(!m21d || fresh){
 			double temp;
-			for(int i=0; i<m21.length; i++)
-				m21[i] = 0.0;
-			//leaf node stopping condition (node 2 is a leaf node)
-			if(N2.dN.size()==1){
-				//System.out.print(" LEAF ");
-				//for each value of node 1
-				for(int i=0; i<m21.length; i++)
-					//sum over alphabet size (values of node 2)
-					for(int j=0; j<m21.length; j++)
-						m21[i] = m21[i] + N2.npot(Utilities.intToPBS(j,N2.V.size()),false)*epot(Utilities.intToPBS(i,N1.V.size()),Utilities.intToPBS(j,N2.V.size()));
-			}
-			else{
-				//for each value of node 1
-				for(int i=0; i<m21.length; i++){
-					//sum over alphabet size (values of node 2)
-					for(int j=0; j<m21.length; j++){
+			Arrays.fill(m21,0.0);
+			for(int i=0; i<m21.length; i++){ //for each configuration of edge ends in supernode 1
+				X1 = Utilities.toPString(i,E.size(),r);
+				for(int j=0; j<(int)Math.pow(r,N2.V.size()); j++){ //sum over configurations of supernode 2 - must use "false" when calculating npot or we will skew calculations
+					N2_VAL = Utilities.toPString(j,N2.V.size(),r);
+					X2 = N2_edgeEndVector(N2_VAL);
+					//----- leaf node stopping condition (supernode 2 is a leaf node)
+					if(N2.dN.size()==1)
+						m21[i] = m21[i] + N2.npot(N2_VAL,false) * epot(X1,X2);
+						//System.out.println("\t("+N2_VAL+")"+N2.npot(N2_VAL,false)+": "+"("+X1+","+X2+")"+epot(X1,X2));
+					//----- not stopping, must recursively find more messages
+					else{
 						temp = 1.0;
-						//product over messages from neighbours of node 2 excluding node 1 
-						for(int k=0; k<N2.dN.size(); k++){
-							//ignore message node 1 by comparing if edge object reference the same
+						for(int k=0; k<N2.dN.size(); k++) //product over messages from neighbours of supernode 2 excluding supernode 1 
 							if(N2.dN.get(k)!=N1.dN.get(ref))
-								//find "child" node of node 1
 								if(N2.dN.get(k).N1.id!=N2.id)
-									temp = temp*N2.dN.get(k).get_m12(Utilities.intToPBS(j,N2.V.size()),k,fresh);
+									temp = temp * N2.dN.get(k).get_m12(N2_VAL,k,fresh);
 								else
-									temp = temp*N2.dN.get(k).get_m21(Utilities.intToPBS(j,N2.V.size()),k,fresh);
-						}
-						m21[i] = m21[i] + epot(Utilities.intToPBS(i,N1.V.size()),Utilities.intToPBS(j,N2.V.size()))*N2.npot(Utilities.intToPBS(j,N2.V.size()),false)*temp;
+									temp = temp * N2.dN.get(k).get_m21(N2_VAL,k,fresh);
+						m21[i] = m21[i] + epot(X1,X2) * N2.npot(N2_VAL,false) * temp;
 					}
 				}
 			}
-			//normalization
-			double sum = 0.0;
-			for(int i=0; i<m21.length; i++)
-				sum = sum + m21[i];
-			for(int i=0; i<m21.length; i++)
-				m21[i] = m21[i]/sum;
-			
-			for(int i=0; i<m21d.length; i++)
-				m21d[i] = true;
+			//----- normalization
+			Utilities.normalize(m21);
+			//----- set calculated flag to true
+			m21d = true;
 		}
-		//System.out.println(m21[x1]);
-		return m21[Integer.parseInt(X1,2)];
+		X1 = N1_edgeEndVector(N1_VAL);
+		//System.out.println(N2.id+"-->"+N1.id+" ("+N1_VAL+") "+(!m21d || fresh));
+		//System.out.println(X1+": "+m21[Integer.parseInt(X1,r)]);
+		return m21[Integer.parseInt(X1,r)];
 	}
-
-
-/*
-	//ORIGINAL BP WITHOUT MESSAGE NORMALIZATION
-
-	public double get_m12(String LX2, int ref, boolean fresh){
-		//values at supernode 2 may not be all needed, check for required values only
-		//IMPORTANT NOTE: for this to work, the LX2 string must be of same order as node list in supernode
+	
+	//values at supernode 2 may not be all needed, check for required values only
+	public String N2_edgeEndVector(String N2_VAL){
 		String X2 = "";
-		for(int i=0; i<E.size(); i++){
-			if(N2.V.contains(E.get(i).n1)) //node 1 of edge is in supernode 2
-				X2 = X2 + LX2.substring(N2.V.indexOf(E.get(i).n1),N2.V.indexOf(E.get(i).n1)+1);
-			else //node 2 of edge is in supernode 2
-				X2 = X2 + LX2.substring(N2.V.indexOf(E.get(i).n2),N2.V.indexOf(E.get(i).n2)+1);
-		}
-		//System.out.println("m_"+n1.id+"-->"+n2.id);
-		//calculate only if message has not already been computed
-		if(!m12d[Integer.parseInt(X2,2)] || fresh){
-			double temp;
-			m12[Integer.parseInt(X2,2)] = 0.0;
-			//leaf node stopping condition (node 1 is a leaf node)
-			if(N1.dN.size()==1){
-				//System.out.print(" LEAF ");
-				//sum over alphabet size (values of node 1)
-				for(int i=0; i<m12.length; i++)
-					m12[Integer.parseInt(X2,2)] = m12[Integer.parseInt(X2,2)] + N1.npot(Utilities.intToPBS(i,N1.V.size()))*epot(Utilities.intToPBS(i,N1.V.size()),X2);
-			}
+		for(int i=0; i<E.size(); i++)
+			//----- node 1 of edge is in supernode 2
+			if(N2.V.contains(E.get(i).n1)) 
+				X2 = X2 + N2_VAL.substring(N2.V.indexOf(E.get(i).n1),N2.V.indexOf(E.get(i).n1)+1);
+			//----- node 2 of edge is in supernode 2
 			else
-				//sum over alphabet size (values of node 1)
-				for(int i=0; i<m12.length; i++){
-					temp = 1.0;
-					//product over messages from neighbours of node 1 excluding node 2 
-					for(int j=0; j<N1.dN.size(); j++){
-						//ignore message node 2 by comparing if edge object reference the same
-						if(N1.dN.get(j)!=N2.dN.get(ref))
-							//find "child" node of node 1
-							if(N1.dN.get(j).N1.id!=N1.id)
-								temp = temp*N1.dN.get(j).get_m12(Utilities.intToPBS(i,N1.V.size()),j,fresh);
-							else
-								temp = temp*N1.dN.get(j).get_m21(Utilities.intToPBS(i,N1.V.size()),j,fresh);
-					}
-					m12[Integer.parseInt(X2,2)] = m12[Integer.parseInt(X2,2)] + epot(Utilities.intToPBS(i,N1.V.size()),X2)*N1.npot(Utilities.intToPBS(i,N1.V.size()))*temp;
-				}
-			m12d[Integer.parseInt(X2,2)] = true;
-		}
-		//System.out.println(m12[x2]);
-		return m12[Integer.parseInt(X2,2)];
+				X2 = X2 + N2_VAL.substring(N2.V.indexOf(E.get(i).n2),N2.V.indexOf(E.get(i).n2)+1);
+		return X2;
 	}
-	
-	//message from node 2 to node 1
-	public double get_m21(String LX1, int ref, boolean fresh){
-		//values at supernode ` may not be all needed, check for required values only
-		//IMPORTANT NOTE: for this to work, the LX2 string must be of same order as node list in supernode
+	//values at supernode 1 may not be all needed, check for required values only
+	public String N1_edgeEndVector(String N1_VAL){
 		String X1 = "";
-		for(int i=0; i<E.size(); i++){
-			if(N1.V.contains(E.get(i).n1)) //node 1 of edge is in supernode 1
-				X1 = X1 + LX1.substring(N1.V.indexOf(E.get(i).n1),N1.V.indexOf(E.get(i).n1)+1);
+		for(int i=0; i<E.size(); i++)
+			//----- node 1 of edge is in supernode 1
+			if(N1.V.contains(E.get(i).n1))
+				X1 = X1 + N1_VAL.substring(N1.V.indexOf(E.get(i).n1),N1.V.indexOf(E.get(i).n1)+1);
 			else //node 2 of edge is in supernode 1
-				X1 = X1 + LX1.substring(N1.V.indexOf(E.get(i).n2),N1.V.indexOf(E.get(i).n2)+1);
-		}
-		
-		//System.out.println("m_"+n2.id+"-->"+n1.id);
-		//calculate only if message has not already been computed
-		if(!m21d[Integer.parseInt(X1,2)] || fresh){
-			double temp;
-			m21[Integer.parseInt(X1,2)] = 0.0;
-			//leaf node stopping condition (node 2 is a leaf node)
-			if(N2.dN.size()==1){
-				//System.out.print(" LEAF ");
-				//sum over alphabet size (values of node 2)
-				for(int i=0; i<m21.length; i++)
-					m21[Integer.parseInt(X1,2)] = m21[Integer.parseInt(X1,2)] + N2.npot(Utilities.intToPBS(i,N2.V.size()))*epot(X1,Utilities.intToPBS(i,N2.V.size()));
-			}
-			else
-				//sum over alphabet size (values of node 2)
-				for(int i=0; i<m21.length; i++){
-					temp = 1.0;
-					//product over messages from neighbours of node 2 excluding node 1 
-					for(int j=0; j<N2.dN.size(); j++){
-						//ignore message node 1 by comparing if edge object reference the same
-						if(N2.dN.get(j)!=N1.dN.get(ref))
-							//find "child" node of node 1
-							if(N2.dN.get(j).N1.id!=N2.id)
-								temp = temp*N2.dN.get(j).get_m12(Utilities.intToPBS(i,N2.V.size()),j,fresh);
-							else
-								temp = temp*N2.dN.get(j).get_m21(Utilities.intToPBS(i,N2.V.size()),j,fresh);
-					}
-					m21[Integer.parseInt(X1,2)] = m21[Integer.parseInt(X1,2)] + epot(X1,Utilities.intToPBS(i,N2.V.size()))*N2.npot(Utilities.intToPBS(i,N2.V.size()))*temp;
-				}
-			m21d[Integer.parseInt(X1,2)] = true;
-		}
-		//System.out.println(m21[x1]);
-		return m21[Integer.parseInt(X1,2)];
+				X1 = X1 + N1_VAL.substring(N1.V.indexOf(E.get(i).n2),N1.V.indexOf(E.get(i).n2)+1);
+		return X1;
 	}
-*/
 	
+	//adds this edge to neighbourhood lists of its ends (i.e. attach to nodes)
+	public void attach(){
+		N1.dN.add(this); N2.dN.add(this);
+	}
+	//removes this edge from neighbourhood lists of its ends (i.e. detach from nodes)
+	public void detach(){
+		N1.dN.remove(this); N2.dN.remove(this);
+	}
+	
+	//returns id of other node
+	public int getOtherNode(int ref){
+		if(ref==N1.id) return N2.id;
+		else return N1.id;
+	}
+	//returns reference to other node
+	public SuperNode getOtherNode(SuperNode ref){
+		if(ref==N1) return N2;
+		else return N1;
+	}
+	
+	//output to string
 	public String toString(){
 		String Info = "<SUPEREDGE "+N1.id+"-"+N2.id+": ";
 		for(int i=0;i<E.size();i++)

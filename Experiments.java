@@ -37,7 +37,7 @@ public class Experiments {
 		
 		String data = "";
 		for(int i=0; i<G.V.size(); i++)
-			data = data+G.V.get(i).N_VAL;
+			data = data+G.V.get(i).val;
 		
 		String test;
 		
