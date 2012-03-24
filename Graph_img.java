@@ -3,7 +3,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 
-public class imgGraph extends Graph{
+public class Graph_img extends Graph{
 	
 	public static void main(String[] args){
 		System.out.println("basic validation tests");
@@ -17,7 +17,7 @@ public class imgGraph extends Graph{
 		MRF mrf = new MRF("ising","4pt","NOT IMPLEMENTED YET",param);
 		
 		//----- make graph
-		imgGraph g = new imgGraph(3,4);
+		Graph_img g = new Graph_img(3,4);
 		g.randomGraph(mrf);
 
 		//----- make acyclic
@@ -90,7 +90,7 @@ public class imgGraph extends Graph{
 	
 	public int w,h;
 
-	public imgGraph(int width, int height){
+	public Graph_img(int width, int height){
 		super();
 		w = width;
 		h = height;

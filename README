@@ -1,0 +1,7 @@
+MRF coding
+===========
+
+This is the machinery that I've crudely put together for my masters research.
+
+<Braches>
+Edge_Cover - contains the older (more poorly designed) files that I initially used to try and do arithmetic coding on MRF's using edge cover conditioning methods
