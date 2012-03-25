@@ -4,7 +4,7 @@ public class pot_func {
 	//----- SELF POTENTIAL FUNCTIONS -----
 	//abstract class START
 	public static abstract class n_pot_func {
-		double THETA;
+		public double THETA;
 		abstract public double U(int v);
 		public n_pot_func(double theta){
 			THETA = theta;
@@ -24,7 +24,7 @@ public class pot_func {
 	//----- EDGE POTENTIAL FUNCTIONS -----
 	//abstract class START
 	public static abstract class e_pot_func {
-		double THETA;
+		public double THETA;
 		abstract public double U(int v1, int v2);
 		public e_pot_func(double theta){
 			THETA = theta;

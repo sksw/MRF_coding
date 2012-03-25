@@ -49,6 +49,15 @@ public class Node {
 		}
 	}
 	
+	//find edge that links with a particular neighbour
+	public Edge findLink(Node Neighbour){
+		Edge e = null;
+		for(int i=0; i<dN.size(); i++)
+			if(dN.get(i).getOtherNode(this) == Neighbour)
+				e = dN.get(i);
+		return e;
+	}
+	
 	//output to string
 	public String toString(){
 		return "("+id+":"+dN.size()+")";

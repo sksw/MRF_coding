@@ -4,15 +4,54 @@ import java.util.Map;
 class graph_struct{
 	
 	//----- IMAGE GRAPH STRUCTURES -----
+	
 	//interface START
+	
 	public static interface img_struct {
 		// - SHOULD NOTE THAT img_struct.mk_edges(...) does not use a deep copy of potential function object, this gives MRF full control of edges
-		void mk_edges(int w, int h, ArrayList<Node> V, ArrayList<Edge> E, Map<String, Object> THETA);
+		public void mk_edges(Graph_img G, Map<String, Object> THETA);
+		public abstract void getCutset(int row, int spacing, Graph_img G, ArrayList<Node> sV, ArrayList<Edge> sE);
 	}
+	
 	//interface END
 	
 	public static class ising4pt implements img_struct{
-		public void mk_edges(int w, int h, ArrayList<Node> V, ArrayList<Edge> E, Map<String, Object> THETA){
+		public void getCutset(int row, int spacing, Graph_img G, ArrayList<Node> sV, ArrayList<Edge> sE){
+			int w = G.w, h = G.h;
+			ArrayList<Node> V = G.V; ArrayList<Edge> E = G.E;
+			Node Trg,Src; Edge Link;
+			for(int x=0; x<w; x++)
+				for(int y=0; y<spacing; y++){
+					Trg = V.get(x*h+row+y);
+					//----- condition on the boundaries unless we are on top of very first strip OR bottom of very last strip
+					if(y==0 ||y==spacing-1){
+						if(y==0) //condition on top boundary
+							Src = V.get(x*h+row-1);
+						else //condition on bottom boundary
+							Src = V.get(x*h+row+1);;
+						for(int k=0; k<Trg.r; k++) //collapse the self-potential of Src node into Trg node
+							Trg.sf[k] = Trg.sf[k] * Src.npot(Src.VAL);
+						Link = Trg.findLink(Src);
+						if(Link.n1 == Trg)
+							for(int v=0; v<Trg.r; v++)
+								Trg.sf[v] = Trg.sf[v] * Link.epot(v,Src.VAL);
+						else
+							for(int v=0; x<Trg.r; v++)	
+								Trg.sf[v] = Trg.sf[v] * Link.epot(Src.VAL,v);
+						sV.add(Trg);
+					}
+					//----- don't need to do anything with nodes not on boundaries
+					else
+						sV.add(Trg);
+				}
+			//----- is internal edge if both ends are in the created set of nodes
+			for(int i=0; i<E.size(); i++)
+				if(sV.contains(E.get(i).n1) && sV.contains(E.get(i).n2))
+					sE.add(E.get(i));
+		}
+		public void mk_edges(Graph_img G, Map<String, Object> THETA){
+			int w = G.w, h = G.h;
+			ArrayList<Node> V = G.V; ArrayList<Edge> E = G.E;
 			//----- unpack THETA for the proper items
 			int r = V.get(0).r; //range of node values dictated by node list
 			pot_func.n_pot_func SELF = (pot_func.n_pot_func)THETA.get("SELF");
@@ -26,24 +65,29 @@ class graph_struct{
 			// - left and top edges generic
 			// - special cases at bottom edge, right edge, and bottom right corner are special cases
 			//E = new ArrayList<Edge>(0);
-			for(int i=0; i<w; i++) //i = col
-				for(int j=0; j<h ;j++) //j = row
-					if(i*h+j != w*h-1)//bottom right corner - do nothing since its neighbours will notify it of connection
-						if((i*h+j)%h == h-1){//bottom edge
-							E.add(new Edge(V.get(i*h+j),V.get(i*h+j+h),"HOR",HOR,r));
+			for(int x=0; x<w; x++)
+				for(int y=0; y<h ;y++)
+					if(x*h+y != w*h-1)//bottom right corner - do nothing since its neighbours will notify it of connection
+						if((x*h+y)%h == h-1){//bottom edge
+							E.add(new Edge(V.get(x*h+y),V.get(x*h+y+h),"HOR",HOR,r));
 						}
-						else if(i*h+j > (w-1)*h-1){//right edge
-							E.add(new Edge(V.get(i*h+j),V.get(i*h+j+1),"VER",VER,r));
+						else if(x*h+y > (w-1)*h-1){//right edge
+							E.add(new Edge(V.get(x*h+y),V.get(x*h+y+1),"VER",VER,r));
 						}
 						else{// other
-							E.add(new Edge(V.get(i*h+j),V.get(i*h+j+1),"VER",VER,r));
-							E.add(new Edge(V.get(i*h+j),V.get(i*h+j+h),"HOR",HOR,r));
+							E.add(new Edge(V.get(x*h+y),V.get(x*h+y+1),"VER",VER,r));
+							E.add(new Edge(V.get(x*h+y),V.get(x*h+y+h),"HOR",HOR,r));
 						}
 		}
 	}	
 	
 	public static class ising8pt implements img_struct{
-		public void mk_edges(int w, int h, ArrayList<Node> V, ArrayList<Edge> E, Map<String, Object> THETA){
+		public void getCutset(int row, int spacing, Graph_img G, ArrayList<Node> sV, ArrayList<Edge> sE){
+
+		}
+		public void mk_edges(Graph_img G, Map<String, Object> THETA){
+			int w = G.w, h = G.h;
+			ArrayList<Node> V = G.V; ArrayList<Edge> E = G.E;
 			//----- unpack THETA for the proper items
 			int r = V.get(0).r; //range of node values dictated by node list
 			pot_func.n_pot_func SELF = (pot_func.n_pot_func)THETA.get("SELF");
@@ -62,30 +106,30 @@ class graph_struct{
 			//- Bottom left corner does not need to do anything, all connections are communicated to it by other nodes
 			E = new ArrayList<Edge>(0);
 			Edge newE;
-			for(int i=0; i<w; i++) //i = col
-				for(int j=0; j<h ;j++) //j = row
+			for(int x=0; x<w; x++)
+				for(int y=0; y<h ;y++)
 					//System.out.println(n++);
-					if(i*h+j != w*h-1)//bottom right corner - do nothing since its neighbours will notify it of connection
-						if((i*h+j)%h == 0 && i!=w-1){//top edge except top right corner
-							E.add(new Edge(V.get(i*h+j),V.get(i*h+j+h),"HOR",HOR,r)); //right
-							E.add(new Edge(V.get(i*h+j),V.get(i*h+j+1),"VER",VER,r)); //down
-							E.add(new Edge(V.get(i*h+j),V.get(i*h+j+h+1),"DIAG",DIAG,r)); //down diag
+					if(x*h+y != w*h-1)//bottom right corner - do nothing since its neighbours will notify it of connection
+						if((x*h+y)%h == 0 && x!=w-1){//top edge except top right corner
+							E.add(new Edge(V.get(x*h+y),V.get(x*h+y+h),"HOR",HOR,r)); //right
+							E.add(new Edge(V.get(x*h+y),V.get(x*h+y+1),"VER",VER,r)); //down
+							E.add(new Edge(V.get(x*h+y),V.get(x*h+y+h+1),"DIAG",DIAG,r)); //down diag
 						}
-						else if((i*h+j)%h == h-1){//bottom edge
+						else if((x*h+y)%h == h-1){//bottom edge
 							//System.out.println("bottom");
-							E.add(new Edge(V.get(i*h+j),V.get(i*h+j+h),"HOR",HOR,r)); //right
-							E.add(new Edge(V.get(i*h+j),V.get(i*h+j+h-1),"XDIAG",XDIAG,r)); //upper xdiag
+							E.add(new Edge(V.get(x*h+y),V.get(x*h+y+h),"HOR",HOR,r)); //right
+							E.add(new Edge(V.get(x*h+y),V.get(x*h+y+h-1),"XDIAG",XDIAG,r)); //upper xdiag
 						}
-						else if(i*h+j > (w-1)*h-1){//right edge
+						else if(x*h+y > (w-1)*h-1){//right edge
 							//System.out.println("right");
-							E.add(new Edge(V.get(i*h+j),V.get(i*h+j+1),"VER",VER,r)); //down
+							E.add(new Edge(V.get(x*h+y),V.get(x*h+y+1),"VER",VER,r)); //down
 						}
 						else{// other
 							//System.out.println("other");
-							E.add(new Edge(V.get(i*h+j),V.get(i*h+j+h),"HOR",HOR,r)); //right
-							E.add(new Edge(V.get(i*h+j),V.get(i*h+j+1),"VER",VER,r)); //down
-							E.add(new Edge(V.get(i*h+j),V.get(i*h+j+h+1),"DIAG",DIAG,r)); //down diag
-							E.add(new Edge(V.get(i*h+j),V.get(i*h+j+h-1),"XDIAG",XDIAG,r)); //upper xdiag
+							E.add(new Edge(V.get(x*h+y),V.get(x*h+y+h),"HOR",HOR,r)); //right
+							E.add(new Edge(V.get(x*h+y),V.get(x*h+y+1),"VER",VER,r)); //down
+							E.add(new Edge(V.get(x*h+y),V.get(x*h+y+h+1),"DIAG",DIAG,r)); //down diag
+							E.add(new Edge(V.get(x*h+y),V.get(x*h+y+h-1),"XDIAG",XDIAG,r)); //upper xdiag
 						}
 		}
 	}
