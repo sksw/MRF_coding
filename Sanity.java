@@ -13,7 +13,10 @@ public class Sanity {
 		param.put("SELF",new pot_func.n_ising(0.0));
 		param.put("HOR",new pot_func.e_ising(0.2));
 		param.put("VER",new pot_func.e_ising(0.8));
-		MRF mrf = new MRF("ising","4pt","NOT IMPLEMENTED YET",param);
+		
+		
+		
+		MRF mrf = new MRF(param);
 		
 		//----- make graph
 		Graph_img g = new Graph_img(3,4);
@@ -22,12 +25,13 @@ public class Sanity {
 		g.print();
 
 		//----- make acyclic
+		Node check_start = g.V.get(0);
 		int[] remove = {3,5,6,10,12,13};
 		for(int i=0; i<remove.length ;i++){
 			g.E.get(remove[i]-i).detach();
 			g.E.remove(remove[i]-i);
 		}
-		if(Graph.checkCyclic(g.V,0,0,0)){
+		if(Graph.checkCyclic(check_start,check_start,check_start)){
 			System.out.println("cyclic!");
 			System.exit(0);
 		}

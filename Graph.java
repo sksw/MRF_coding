@@ -13,19 +13,19 @@ public class Graph {
 	}
 	
 	//check if graph cyclic - starts at node #inx, looks at neighbours to see if we've returned to previously visited node refInx, then check the neighbours of the neighbours recursively
-	public static boolean checkCyclic(ArrayList<Node> V, int refInx, int inx, int pinx){
+	public static boolean checkCyclic(Node refInx, Node inx, Node pinx){
 		//---- STOPPING CONDITION single node graph
-		if(V.get(inx).dN.size() == 0)
+		if(inx.dN.size() == 0)
 			return false;
 		//----- STOPPING CONDITION checks neighbours to see if we've returned to previously visited node refInx
-		for(int i=0; i<V.get(inx).dN.size(); i++)
-			if(V.get(inx).dN.get(i).getOtherNode(inx) != pinx)
-				if(V.get(inx).dN.get(i).getOtherNode(inx) == refInx)
+		for(int i=0; i<inx.dN.size(); i++)
+			if(inx.dN.get(i).getOtherNode(inx) != pinx)
+				if(inx.dN.get(i).getOtherNode(inx) == refInx)
 					return true;
 		//----- RECURSIVELY check the neighbours of neighbours
-		for(int i=0; i<V.get(inx).dN.size(); i++)
-			if(V.get(inx).dN.get(i).getOtherNode(inx) != pinx)
-				if(checkCyclic(V,refInx,V.get(inx).dN.get(i).getOtherNode(inx),inx))
+		for(int i=0; i<inx.dN.size(); i++)
+			if(inx.dN.get(i).getOtherNode(inx) != pinx)
+				if(checkCyclic(refInx,inx.dN.get(i).getOtherNode(inx),inx))
 					return true;
 		return false;
 	}
@@ -33,14 +33,14 @@ public class Graph {
 	//brute force belief calculation
 	public static double[] belief_BF(SuperNode A, ArrayList<Node> V, ArrayList<Edge> E){
 		//----- get radix
-		int r = V.get(0).r;
+		int r = V.get(0).R;
 		double[] Z_A = new double[(int)Math.pow(r,A.V.size())];
 		Arrays.fill(Z_A,0.0);
 		double pot;
 		//----- get node list of set A
 		List<Integer> Nodes = new ArrayList<Integer>();
 		for(int i=0; i<A.V.size(); i++)
-			Nodes.add(A.V.get(i).id);
+			Nodes.add(A.V.get(i).ID);
 		//----- for every possible configuration of set A
 		String a, a_c, config;
 		int a_inx, a_c_inx;
@@ -64,9 +64,9 @@ public class Graph {
 				}
 				//----- calculate potential for given configuration
 				for(int k=0; k<V.size(); k++) //nodes
-					pot = pot*V.get(k).npot(Integer.parseInt(config.substring(k,k+1)));
+					pot = pot*V.get(k).pot(Integer.parseInt(config.substring(k,k+1)));
 				for(int k=0; k<E.size(); k++) //edges
-					pot = pot*E.get(k).epot(
+					pot = pot*E.get(k).pot(
 							Integer.parseInt(config.substring(V.indexOf(E.get(k).n1),V.indexOf(E.get(k).n1)+1)),
 							Integer.parseInt(config.substring(V.indexOf(E.get(k).n2),V.indexOf(E.get(k).n2)+1)));
 				//----- construct belief (sum)

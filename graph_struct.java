@@ -1,19 +1,47 @@
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.HashMap;
+import java.util.Collections;
 
 class graph_struct{
+
 	
-	//----- IMAGE GRAPH STRUCTURES -----
+	//===== NEIGHBOURHOOD STRUCTURES =====
 	
-	//interface START
+	//----- type of neighbourhoods
+	//N1 --> 4pt, up/down
+	//N2 --> 4pt, diag/xdiag
+	private static int[][] N1 = {{-1,0},{0,1},{1,0},{0,-1}};
+	private static int[][] N2 = {{-1,-1},{-1,1},{1,-1},{1,1}};
 	
-	public static interface img_struct {
+	//----- ising 4pt
+	public static final Map<String, int[][]> ISING_4PT = i4();
+	private static Map<String, int[][]> i4() {
+		Map<String,int[][]> N_LIB = new HashMap<String, int[][]> ();
+		N_LIB.put("N1",N1); 
+	    return Collections.unmodifiableMap(N_LIB);
+	}
+	
+	//----- ising 8pt
+	public static final Map<String, int[][]> ISING_8PT = i8();
+	private static Map<String, int[][]> i8() {
+		Map<String,int[][]> N_LIB = new HashMap<String, int[][]> ();
+		N_LIB.put("N1",N1); 
+		N_LIB.put("N2",N2); 
+	    return Collections.unmodifiableMap(N_LIB);
+	}
+	
+	//===== IMAGE GRAPH STRUCTURES =====
+	
+	public interface img_struct {
 		// - SHOULD NOTE THAT img_struct.mk_edges(...) does not use a deep copy of potential function object, this gives MRF full control of edges
 		public void mk_edges(Graph_img G, Map<String, Object> THETA);
 		public abstract void getCutset(int row, int spacing, Graph_img G, ArrayList<Node> sV, ArrayList<Edge> sE);
 	}
 	
-	//interface END
+	//===== CLASS DEFINITIONS =====
+
+	//----- img_struct
 	
 	public static class ising4pt implements img_struct{
 		public void getCutset(int row, int spacing, Graph_img G, ArrayList<Node> sV, ArrayList<Edge> sE){
@@ -29,15 +57,15 @@ class graph_struct{
 							Src = V.get(x*h+row-1);
 						else //condition on bottom boundary
 							Src = V.get(x*h+row+1);;
-						for(int k=0; k<Trg.r; k++) //collapse the self-potential of Src node into Trg node
-							Trg.sf[k] = Trg.sf[k] * Src.npot(Src.VAL);
+						for(int k=0; k<Trg.R; k++) //collapse the self-potential of Src node into Trg node
+							Trg.sf[k] = Trg.sf[k] * Src.pot(Src.VAL);
 						Link = Trg.findLink(Src);
 						if(Link.n1 == Trg)
-							for(int v=0; v<Trg.r; v++)
-								Trg.sf[v] = Trg.sf[v] * Link.epot(v,Src.VAL);
+							for(int v=0; v<Trg.R; v++)
+								Trg.sf[v] = Trg.sf[v] * Link.pot(v,Src.VAL);
 						else
-							for(int v=0; x<Trg.r; v++)	
-								Trg.sf[v] = Trg.sf[v] * Link.epot(Src.VAL,v);
+							for(int v=0; x<Trg.R; v++)	
+								Trg.sf[v] = Trg.sf[v] * Link.pot(Src.VAL,v);
 						sV.add(Trg);
 					}
 					//----- don't need to do anything with nodes not on boundaries
@@ -53,7 +81,7 @@ class graph_struct{
 			int w = G.w, h = G.h;
 			ArrayList<Node> V = G.V; ArrayList<Edge> E = G.E;
 			//----- unpack THETA for the proper items
-			int r = V.get(0).r; //range of node values dictated by node list
+			int r = V.get(0).R; //range of node values dictated by node list
 			pot_func.n_pot_func SELF = (pot_func.n_pot_func)THETA.get("SELF");
 			pot_func.e_pot_func HOR = (pot_func.e_pot_func)THETA.get("HOR");
 			pot_func.e_pot_func VER = (pot_func.e_pot_func)THETA.get("VER");
@@ -89,7 +117,7 @@ class graph_struct{
 			int w = G.w, h = G.h;
 			ArrayList<Node> V = G.V; ArrayList<Edge> E = G.E;
 			//----- unpack THETA for the proper items
-			int r = V.get(0).r; //range of node values dictated by node list
+			int r = V.get(0).R; //range of node values dictated by node list
 			pot_func.n_pot_func SELF = (pot_func.n_pot_func)THETA.get("SELF");
 			pot_func.e_pot_func HOR = (pot_func.e_pot_func)THETA.get("HOR");
 			pot_func.e_pot_func VER = (pot_func.e_pot_func)THETA.get("VER");

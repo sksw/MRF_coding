@@ -39,7 +39,7 @@ public class SuperEdge {
 		double pot = 1.0;
 		//multiply all edge potentials
 		for(int i=0; i<E.size(); i++)
-			pot = pot * E.get(i).epot( Integer.parseInt(V1.substring(i,i+1),r) , Integer.parseInt(V2.substring(i,i+1),r) );
+			pot = pot * E.get(i).pot( Integer.parseInt(V1.substring(i,i+1),r) , Integer.parseInt(V2.substring(i,i+1),r) );
 		return pot;
 	}
 

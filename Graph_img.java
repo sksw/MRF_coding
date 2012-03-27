@@ -1,21 +1,19 @@
 import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
 
 public class Graph_img extends Graph{
 	
 	public int w,h;
+	public Node[][] Img;
 
 	public Graph_img(int width, int height){
 		super();
 		w = width;
 		h = height;
+		Img = new Node[w][h];
 	}
 	
 	public Graph_img(int img[][], int range){
-		w=img.length;
-		h=img[0].length;
+		this(img.length,img[0].length);
 		construct(img,range);
 	}
 	
@@ -33,20 +31,27 @@ public class Graph_img extends Graph{
 	public void randomGraph(){
 		V = new ArrayList<Node>(0);
 		E = new ArrayList<Edge>(0);
-		for(int i=0; i<w*h; i++)
-			if(Math.random()>0.75)
-				V.add(new Node(i,1,2));
-			else
-				V.add(new Node(i,0,2));
+		for(int x=0; x<w; x++)
+			for(int y=0; y<h; y++){
+				if(Math.random()>0.75)
+					Img[x][y] = new Node(x*h+y,1,2);
+				else
+					Img[x][y] = new Node(x*h+y,0,2);
+				V.add(Img[x][y]);
+			}
 	}
 	
 	//construct graph from int[][]
 	public void construct(int[][] img, int r){
 		V = new ArrayList<Node>(0);
 		E = new ArrayList<Edge>(0);
+		Node Pix;
 		for(int x=0; x<w; x++)
-			for(int y=0; y<h; y++)
-				V.add(new Node(x*h+y,img[x][y],r));
+			for(int y=0; y<h; y++){
+				Pix = new Node(x*h+y,img[x][y],r);
+				V.add(Pix);
+				Img[x][y] = Pix;
+			}
 	}
 
 	//output graph
