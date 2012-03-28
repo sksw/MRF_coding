@@ -1,57 +1,38 @@
 
 public class pot_func {
+	
+	//===== GENERAL POTENTIAL FUNCTIONS =====
+	
+	//----- general potential function (this is for cliques)
+	public static abstract class abstract_pot{
+		//tunable parameter for this potential function
+		public double THETA[];
+		//potential function
+		abstract public double U(int[] node_values);
+		public abstract_pot(double theta[]){
+			THETA = theta;
+		}
+	}
 
-	//===== POTENTIAL FUNCTIONS =====
-	
-	public static abstract class n_pot_func {
-		public double THETA;
-		abstract public double U(int v);
-		public n_pot_func(double theta){
-			THETA = theta;
-		}
-	}
-	
-	public static abstract class e_pot_func {
-		public double THETA;
-		abstract public double U(int v1, int v2);
-		public e_pot_func(double theta){
-			THETA = theta;
-		}
-	}
-	
-	public abstract class clique {
-		public Node[] Nodes;
-		public final int R;
-		public String TYPE;
-		
-		public abstract double pot(int[] node_values);
-		
-		public clique(int range){
-			R = range;
-		}
-	}
-	
-	//===== CLASS DEFINITIONS =====
+	//===== POTENTIAL FUNCTION CLASS DEFINITIONS =====
 	
 	//----- n_ising
-	
-	public static class n_ising extends n_pot_func{
-		public n_ising(double theta){
+	public static class node_ising_pot extends abstract_pot{
+		public node_ising_pot(double theta[]){
 			super(theta);
 		}
-		public double U(int v){
-			return Math.exp(THETA*v);
+		public double U(int[] v){
+			return Math.exp(THETA[0]*v[0]);
 		}
 	}
 	
 	//----- e_ising
-	
-	public static class e_ising extends e_pot_func{
-		public e_ising(double theta){
+	public static class edge_ising_pot extends abstract_pot{
+		public edge_ising_pot(double theta[]){
 			super(theta);
 		}
-		public double U(int v1, int v2){
-			return Math.exp(THETA*((double)v1)*((double)v2));
+		public double U(int[] v){
+			return Math.exp(THETA[0]*((double)v[0])*((double)v[1]));
 		}
 	}
 	

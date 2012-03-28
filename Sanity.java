@@ -10,16 +10,16 @@ public class Sanity {
 		//----- specify MRF
 		//0.2 horizontal, 0.8 vertical, with no external field
 		Map<String,Object> param = new HashMap<String,Object>();
-		param.put("SELF",new pot_func.n_ising(0.0));
-		param.put("HOR",new pot_func.e_ising(0.2));
-		param.put("VER",new pot_func.e_ising(0.8));
+		param.put("SELF",new pot_func.node_ising_pot(0.0));
+		param.put("HOR",new pot_func.edge_ising_pot(0.2));
+		param.put("VER",new pot_func.edge_ising_pot(0.8));
 		
 		
 		
 		MRF mrf = new MRF(param);
 		
 		//----- make graph
-		Graph_img g = new Graph_img(3,4);
+		ImageGraph g = new ImageGraph(3,4);
 		g.randomGraph();
 		g.makeEdges(mrf);
 		g.print();

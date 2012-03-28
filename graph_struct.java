@@ -35,8 +35,8 @@ class graph_struct{
 	
 	public interface img_struct {
 		// - SHOULD NOTE THAT img_struct.mk_edges(...) does not use a deep copy of potential function object, this gives MRF full control of edges
-		public void mk_edges(Graph_img G, Map<String, Object> THETA);
-		public abstract void getCutset(int row, int spacing, Graph_img G, ArrayList<Node> sV, ArrayList<Edge> sE);
+		public void mk_edges(ImageGraph G, Map<String, Object> THETA);
+		public abstract void getCutset(int row, int spacing, ImageGraph G, ArrayList<Node> sV, ArrayList<Edge> sE);
 	}
 	
 	//===== CLASS DEFINITIONS =====
@@ -44,7 +44,7 @@ class graph_struct{
 	//----- img_struct
 	
 	public static class ising4pt implements img_struct{
-		public void getCutset(int row, int spacing, Graph_img G, ArrayList<Node> sV, ArrayList<Edge> sE){
+		public void getCutset(int row, int spacing, ImageGraph G, ArrayList<Node> sV, ArrayList<Edge> sE){
 			int w = G.w, h = G.h;
 			ArrayList<Node> V = G.V; ArrayList<Edge> E = G.E;
 			Node Trg,Src; Edge Link;
@@ -77,7 +77,7 @@ class graph_struct{
 				if(sV.contains(E.get(i).n1) && sV.contains(E.get(i).n2))
 					sE.add(E.get(i));
 		}
-		public void mk_edges(Graph_img G, Map<String, Object> THETA){
+		public void mk_edges(ImageGraph G, Map<String, Object> THETA){
 			int w = G.w, h = G.h;
 			ArrayList<Node> V = G.V; ArrayList<Edge> E = G.E;
 			//----- unpack THETA for the proper items
@@ -110,10 +110,10 @@ class graph_struct{
 	}	
 	
 	public static class ising8pt implements img_struct{
-		public void getCutset(int row, int spacing, Graph_img G, ArrayList<Node> sV, ArrayList<Edge> sE){
+		public void getCutset(int row, int spacing, ImageGraph G, ArrayList<Node> sV, ArrayList<Edge> sE){
 
 		}
-		public void mk_edges(Graph_img G, Map<String, Object> THETA){
+		public void mk_edges(ImageGraph G, Map<String, Object> THETA){
 			int w = G.w, h = G.h;
 			ArrayList<Node> V = G.V; ArrayList<Edge> E = G.E;
 			//----- unpack THETA for the proper items
