@@ -1,7 +1,7 @@
 import java.util.ArrayList;
 import java.util.Arrays;
 
-public class Edge extends CliqueStructures.Clique{
+public class Edge extends CliqueStructures.Clique implements BeliefPropagation.BPEdge<Integer>{
 
 	public Node n1; //node 1
 	public Node n2; //node 2
@@ -24,15 +24,15 @@ public class Edge extends CliqueStructures.Clique{
 	
 	//edge-potential function
 	//v1 should always be value of node 1
-	public double pot(int v1, int v2){
+	public double epot(Integer v1, Integer v2){ //relying on autoboxing!
 		int[] node_values = new int[2];
-		node_values[0] = v1;
-		node_values[1] = v2;
+		node_values[0] = v1.intValue();
+		node_values[1] = v2.intValue();
 		return pot.U(node_values);
 	}
 
 	//message from node 1 to node 2
-	public double get_m12(int x2, int ref, boolean fresh){
+	public double get_m12(Integer x2, int ref, boolean fresh){
 		//----- compute message if not already done or if want new calculation
 		if(!m12d || fresh){
 			double temp;
@@ -41,7 +41,7 @@ public class Edge extends CliqueStructures.Clique{
 			if(n1.dN.size()==1)
 				for(int i=0; i<m12.length; i++) //calculate for different values of node 2
 					for(int j=0; j<m12.length; j++) //sum over alphabet size (values of node 1)
-						m12[i] = m12[i] + n1.pot(j)*pot(j,i);
+						m12[i] = m12[i] + n1.npot(j)*epot(j,i);
 			//----- not stopping, must recursively find more messages
 			else
 				for(int i=0; i<m12.length; i++) //calculate for different values of node 2
@@ -53,7 +53,7 @@ public class Edge extends CliqueStructures.Clique{
 									temp = temp*n1.dN.get(k).get_m12(j,k,fresh);
 								else
 									temp = temp*n1.dN.get(k).get_m21(j,k,fresh);
-						m12[i] = m12[i] + pot(j,i)*n1.pot(j)*temp;
+						m12[i] = m12[i] + epot(j,i)*n1.npot(j)*temp;
 					}
 			//----- normalization
 			Utilities.normalize(m12);
@@ -61,11 +61,11 @@ public class Edge extends CliqueStructures.Clique{
 			m12d = true;
 		}
 		//----- return message
-		return m12[x2];
+		return m12[x2.intValue()];
 	}
 	
 	//message from node 2 to node 1
-	public double get_m21(int x1, int ref, boolean fresh){
+	public double get_m21(Integer x1, int ref, boolean fresh){
 		//----- compute message if not already done or if want new calculation
 		if(!m21d || fresh){
 			double temp;
@@ -74,7 +74,7 @@ public class Edge extends CliqueStructures.Clique{
 			if(n2.dN.size()==1)
 				for(int i=0; i<m21.length; i++) //calculate for different values of node 1
 					for(int j=0; j<m21.length; j++) //sum over alphabet size (values of node 2)
-						m21[i] = m21[i] + n2.pot(j)*pot(i,j);
+						m21[i] = m21[i] + n2.npot(j)*epot(i,j);
 			//----- not stopping, must recursively find more messages
 			else
 				for(int i=0; i<m21.length; i++) //calculate for different values of node 1
@@ -86,7 +86,7 @@ public class Edge extends CliqueStructures.Clique{
 									temp = temp*n2.dN.get(k).get_m12(j,k,fresh);
 								else
 									temp = temp*n2.dN.get(k).get_m21(j,k,fresh);
-						m21[i] = m21[i] + pot(i,j)*n2.pot(j)*temp;
+						m21[i] = m21[i] + epot(i,j)*n2.npot(j)*temp;
 					}
 			//----- normalization
 			Utilities.normalize(m21);
@@ -94,7 +94,7 @@ public class Edge extends CliqueStructures.Clique{
 			m21d = true;
 		}
 		//----- return message
-		return m21[x1];
+		return m21[x1.intValue()];
 	}
 
 	//adds this edge to neighbourhood lists of its ends (i.e. attach to nodes)

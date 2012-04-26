@@ -29,7 +29,7 @@ public class Graph {
 					return true;
 		return false;
 	}
-		
+	
 	//brute force belief calculation
 	public static double[] belief_BF(SuperNode A, ArrayList<Node> V, ArrayList<Edge> E){
 		//----- get radix
@@ -64,9 +64,9 @@ public class Graph {
 				}
 				//----- calculate potential for given configuration
 				for(int k=0; k<V.size(); k++) //nodes
-					pot = pot*V.get(k).pot(Integer.parseInt(config.substring(k,k+1)));
+					pot = pot*V.get(k).npot(Integer.parseInt(config.substring(k,k+1)));
 				for(int k=0; k<E.size(); k++) //edges
-					pot = pot*E.get(k).pot(
+					pot = pot*E.get(k).epot(
 							Integer.parseInt(config.substring(V.indexOf(E.get(k).n1),V.indexOf(E.get(k).n1)+1)),
 							Integer.parseInt(config.substring(V.indexOf(E.get(k).n2),V.indexOf(E.get(k).n2)+1)));
 				//----- construct belief (sum)

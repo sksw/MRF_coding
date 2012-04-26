@@ -1,7 +1,7 @@
 import java.util.ArrayList;
 import java.util.Arrays;
 
-public class Node extends CliqueStructures.Clique {
+public class Node extends CliqueStructures.Clique implements BeliefPropagation.BPNode<Integer>{
 
 	public final int ID; //node id
 	public final int VAL; //node value
@@ -23,10 +23,10 @@ public class Node extends CliqueStructures.Clique {
 	}
 	
 	//self-potential function
-	public double pot(int v){
+	public double npot(Integer v){ //relying on autoboxing!
 		int[] node_values = new int[1];
-		node_values[0] = v;
-		return sf[v]*pot.U(node_values);
+		node_values[0] = v.intValue();
+		return sf[v.intValue()]*pot.U(node_values);
 	}
 	
 	//belief propagation
@@ -35,7 +35,7 @@ public class Node extends CliqueStructures.Clique {
 	}
 	public void Z(boolean fresh){
 		for(int i=0; i<Z.length; i++){
-			Z[i] = pot(i);
+			Z[i] = npot(i);
 			for(int j=0; j<dN.size(); j++)
 				if(ID == dN.get(j).n1.ID)
 					Z[i] = Z[i] * dN.get(j).get_m21(i,j,fresh);
@@ -45,13 +45,13 @@ public class Node extends CliqueStructures.Clique {
 	}
 	
 	//find edge that links with a particular neighbour
-	public Edge findLink(Node Neighbour){
+	/*public Edge findLink(Node Neighbour){
 		Edge e = null;
 		for(int i=0; i<dN.size(); i++)
 			if(dN.get(i).getOtherNode(this) == Neighbour)
 				e = dN.get(i);
 		return e;
-	}
+	}*/
 	
 	//output to string
 	public String toString(){

@@ -13,6 +13,8 @@ class graph_struct{
 	private static final int[][] N_1 = {{-1,0},{0,1},{1,0},{0,-1}};
 	private static final int[][] N_2 = {{-1,-1},{-1,1},{1,-1},{1,1}};
 	
+	//===== PREMADE NEIGHBOURHOOD SETS =====
+	
 	//----- ising 4pt
 	public static final Map<String, int[][]> ISING_4PT = i4();
 	private static Map<String, int[][]> i4() {
@@ -49,39 +51,6 @@ class graph_struct{
 	/*** 1-cross-diagonal */
 	public static int[][] C_E4 = {{0,0},{1,-1}};
 	
-	/*
-	public void getCutset(int row, int spacing, ImageGraph G, ArrayList<Node> sV, ArrayList<Edge> sE){
-		int w = G.w, h = G.h;
-		ArrayList<Node> V = G.V; ArrayList<Edge> E = G.E;
-		Node Trg,Src; Edge Link;
-		for(int x=0; x<w; x++)
-			for(int y=0; y<spacing; y++){
-				Trg = V.get(x*h+row+y);
-				//----- condition on the boundaries unless we are on top of very first strip OR bottom of very last strip
-				if(y==0 ||y==spacing-1){
-					if(y==0) //condition on top boundary
-						Src = V.get(x*h+row-1);
-					else //condition on bottom boundary
-						Src = V.get(x*h+row+1);;
-					for(int k=0; k<Trg.R; k++) //collapse the self-potential of Src node into Trg node
-						Trg.sf[k] = Trg.sf[k] * Src.pot(Src.VAL);
-					Link = Trg.findLink(Src);
-					if(Link.n1 == Trg)
-						for(int v=0; v<Trg.R; v++)
-							Trg.sf[v] = Trg.sf[v] * Link.pot(v,Src.VAL);
-					else
-						for(int v=0; x<Trg.R; v++)	
-							Trg.sf[v] = Trg.sf[v] * Link.pot(Src.VAL,v);
-					sV.add(Trg);
-				}
-				//----- don't need to do anything with nodes not on boundaries
-				else
-					sV.add(Trg);
-			}
-		//----- is internal edge if both ends are in the created set of nodes
-		for(int i=0; i<E.size(); i++)
-			if(sV.contains(E.get(i).n1) && sV.contains(E.get(i).n2))
-				sE.add(E.get(i));
-	}
-	*/
+	//===== PREMADE CLIQUE SETS =====
+
 }

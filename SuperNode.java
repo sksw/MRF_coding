@@ -1,6 +1,6 @@
 import java.util.ArrayList;
 
-public class SuperNode {
+public class SuperNode implements BeliefPropagation.BPNode<String>{
 
 	public int id; //node id
 	public int r; //range of values for 1 node
@@ -56,22 +56,22 @@ public class SuperNode {
 			for(int i=0; i<newItems.size(); i++){
 				if(newItems.get(i) instanceof Node){
 					n_inx = V.indexOf(newItems.get(i));
-					pot = pot * V.get(n_inx).pot( Integer.parseInt(Val.substring(n_inx,n_inx+1),r) );
+					pot = pot * V.get(n_inx).npot( Integer.parseInt(Val.substring(n_inx,n_inx+1),r) );
 				}
 				else{
 					e = E.get(E.indexOf(newItems.get(i)));
 					n1_inx = V.indexOf(e.n1);
 					n2_inx = V.indexOf(e.n2);
-					pot = pot * e.pot( Integer.parseInt(Val.substring(n1_inx,n1_inx+1),r) , Integer.parseInt(Val.substring(n2_inx,n2_inx+1),r) );
+					pot = pot * e.epot( Integer.parseInt(Val.substring(n1_inx,n1_inx+1),r) , Integer.parseInt(Val.substring(n2_inx,n2_inx+1),r) );
 				}
 			}
 		else
 			for(int i=0; i<V.size(); i++) //multiply all self potential of individual nodes
-				pot = pot*V.get(i).pot(Integer.parseInt(Val.substring(i,i+1),r));
+				pot = pot*V.get(i).npot(Integer.parseInt(Val.substring(i,i+1),r));
 			for(int i=0; i<E.size(); i++){ //multiply all edge potential of edges in super node
 				n1_inx = V.indexOf(E.get(i).n1);
 				n2_inx = V.indexOf(E.get(i).n2);
-				pot = pot*E.get(i).pot( Integer.parseInt(Val.substring(n1_inx,n1_inx+1)) , Integer.parseInt(Val.substring(n2_inx,n2_inx+1)) );
+				pot = pot*E.get(i).epot( Integer.parseInt(Val.substring(n1_inx,n1_inx+1)) , Integer.parseInt(Val.substring(n2_inx,n2_inx+1)) );
 			}
 		return pot;
 	}

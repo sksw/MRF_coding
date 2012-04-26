@@ -38,7 +38,7 @@ public class CliqueStructures{
 		public Clique(int range){
 			R = range;
 			nodes = new ArrayList<Node>(0);
-			type = null;
+			type = "";
 			pot = null;
 		}
 		public Clique(String clique_type, pot_func.abstract_pot clique_pot, ArrayList<Node> clique_nodes, int range){

@@ -1,7 +1,6 @@
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class Sanity {
 	public static void main(String[] args){
@@ -19,7 +18,7 @@ public class Sanity {
 		//mrf.c_struct.put("E_XDIAG_ISING", new CliqueStructures.CliquePair(graph_struct.C_E4, new pot_func.node_ising_pot(0.0)) );
 		
 		//----- make graph
-		ImageGraph g = new ImageGraph(3,4);
+		ImageMRFGraph g = new ImageMRFGraph(3,4);
 		g.randomGraph();
 		g.makeMRF(mrf);
 		g.print();
