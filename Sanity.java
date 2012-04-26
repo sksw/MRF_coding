@@ -9,24 +9,38 @@ public class Sanity {
 		
 		//----- specify MRF
 		//0.2 horizontal, 0.8 vertical, with no external field
-		Map<String,Object> param = new HashMap<String,Object>();
-		param.put("SELF",new pot_func.node_ising_pot(0.0));
-		param.put("HOR",new pot_func.edge_ising_pot(0.2));
-		param.put("VER",new pot_func.edge_ising_pot(0.8));
-		
-		
-		
-		MRF mrf = new MRF(param);
+		MRF mrf = new MRF();		
+		mrf.n_struct = graph_struct.ISING_4PT;
+		mrf.c_struct = new HashMap<String, CliqueStructures.CliquePair>();
+		mrf.c_struct.put("N_ISING", new CliqueStructures.CliquePair(graph_struct.C_N1, new pot_func.node_ising_pot(0.0)) );
+		mrf.c_struct.put("E_VER_ISING", new CliqueStructures.CliquePair(graph_struct.C_E1, new pot_func.edge_ising_pot(0.8)) );
+		mrf.c_struct.put("E_HOR_ISING", new CliqueStructures.CliquePair(graph_struct.C_E2, new pot_func.edge_ising_pot(0.2)) );
+		//mrf.c_struct.put("E_DIAG_ISING", new CliqueStructures.CliquePair(graph_struct.C_E3, new pot_func.node_ising_pot(0.0)) );
+		//mrf.c_struct.put("E_XDIAG_ISING", new CliqueStructures.CliquePair(graph_struct.C_E4, new pot_func.node_ising_pot(0.0)) );
 		
 		//----- make graph
 		ImageGraph g = new ImageGraph(3,4);
 		g.randomGraph();
-		g.makeEdges(mrf);
+		g.makeMRF(mrf);
 		g.print();
+		
+		//----- graph
+		System.out.println("Nodes: " + g.V.size());
+		for(int i=0; i<g.V.size() ;i++)
+			if(i==g.V.size()-1)
+				System.out.print(i+":"+g.V.get(i)+"\n");
+			else
+				System.out.print(i+":"+g.V.get(i)+" ");
+		System.out.println("Edges: " + g.E.size());
+		for(int i=0; i<g.E.size() ;i++)
+			if(i==g.E.size()-1)
+				System.out.print(i+":"+g.E.get(i)+"\n");
+			else
+				System.out.print(i+":"+g.E.get(i)+" ");
 
 		//----- make acyclic
 		Node check_start = g.V.get(0);
-		int[] remove = {3,5,6,10,12,13};
+		int[] remove = {1,2,3,5,6,7};
 		for(int i=0; i<remove.length ;i++){
 			g.E.get(remove[i]-i).detach();
 			g.E.remove(remove[i]-i);
@@ -39,10 +53,16 @@ public class Sanity {
 		//----- graph
 		System.out.println("Nodes: " + g.V.size());
 		for(int i=0; i<g.V.size() ;i++)
-			System.out.println(i+":"+g.V.get(i));
+			if(i==g.V.size()-1)
+				System.out.print(i+":"+g.V.get(i)+"\n");
+			else
+				System.out.print(i+":"+g.V.get(i)+" ");
 		System.out.println("Edges: " + g.E.size());
 		for(int i=0; i<g.E.size() ;i++)
-			System.out.println(i+":"+g.E.get(i));
+			if(i==g.E.size()-1)
+				System.out.print(i+":"+g.E.get(i)+"\n");
+			else
+				System.out.print(i+":"+g.E.get(i)+" ");
 		
 		double[] Z;
 		//----- nodes & edges test
@@ -57,11 +77,13 @@ public class Sanity {
 		System.out.println("----- BP belief");
 		g.V.get(node_test).Z();
 		Z = g.V.get(node_test).Z;
+		Utilities.normalize(Z);
 		for(int i=0; i<Z.length; i++)
 			System.out.println(i+": "+Z[i]);
 		
 		//----- supernodes & superedges test
-		int[] nodes = {2,4,11};
+		int[] nodes = {0,4,8};
+		//int[] nodes = {0,4,8};
 		List<Integer> Nodes = new ArrayList<Integer>();
 		for(int i=0; i<nodes.length; i++)
 			Nodes.add(nodes[i]);

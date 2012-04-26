@@ -1,20 +1,21 @@
 import java.util.ArrayList;
 import java.util.Arrays;
 
-public class Node extends Clique.AbstractClique {
+public class Node extends CliqueStructures.Clique {
 
 	public final int ID; //node id
 	public final int VAL; //node value
-	public boolean isObs; //encoded? (used in arithmetic coding)
+	//public boolean isObs; //encoded? (used in arithmetic coding)
 	public ArrayList<Edge> dN; //connecting edges
 	public double[] Z; //beliefs
 	public double sf[]; //scaling factor for border conditioning
 
 	public Node(int num, int data, int range){
-		super("NODE",range);
+		super(range);
+		nodes.add(this);
 		ID = num;
 		VAL = data;
-		isObs = false;
+		//isObs = false;
 		dN = new ArrayList<Edge>(0);
 		Z = new double[R];
 		sf = new double[R]; Arrays.fill(sf,1.0);
@@ -24,13 +25,8 @@ public class Node extends Clique.AbstractClique {
 	//self-potential function
 	public double pot(int v){
 		int[] node_values = new int[1];
-		return pot.U(node_values);
-	}
-	public double pot(int[] v){
-		double scaling_factor = sf[v[0]];
-		if(v[0]==0)
-			v[0]=-1;
-		return scaling_factor*pot.U(v);
+		node_values[0] = v;
+		return sf[v]*pot.U(node_values);
 	}
 	
 	//belief propagation

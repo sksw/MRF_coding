@@ -3,7 +3,7 @@ import java.util.Map;
 public class MRF {
 	
 	public Map<String, int[][]> n_struct; //neighbourhood names <--> neighbourhood structures
-	public Map<String, Clique.CliquePair> c_struct; //clique names <--> clique structures, clique definitions
+	public Map<String, CliqueStructures.CliquePair> c_struct; //clique names <--> clique structures, clique definitions
 
 	//this should be a function of potentials U
 	public Object p_xy;

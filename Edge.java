@@ -1,6 +1,7 @@
+import java.util.ArrayList;
 import java.util.Arrays;
 
-public class Edge extends Clique.AbstractClique{
+public class Edge extends CliqueStructures.Clique{
 
 	public Node n1; //node 1
 	public Node n2; //node 2
@@ -10,11 +11,10 @@ public class Edge extends Clique.AbstractClique{
 	public boolean m21d;
 
 	//default constructor sets THETA = 0.6
-	public Edge(Node p1, Node p2, String edge_type, pot_func.abstract_pot potential_function, int range){
-		super(edge_type,range);
-		pot = potential_function;
-		n1 = p1;
-		n2 = p2;
+	public Edge(String edge_type, pot_func.abstract_pot edge_potential, ArrayList<Node> edge_nodes, int range){
+		super(edge_type, edge_potential, edge_nodes, range);
+		n1 = nodes.get(0);
+		n2 = nodes.get(1);
 		m12 = new double[R]; Arrays.fill(m12,0.0);
 		m21 = new double[R]; Arrays.fill(m21,0.0);
 		m12d = false;
@@ -28,14 +28,7 @@ public class Edge extends Clique.AbstractClique{
 		int[] node_values = new int[2];
 		node_values[0] = v1;
 		node_values[1] = v2;
-		return pot(node_values);
-	}
-	public double pot(int[] v){
-		if(v[0]==0)
-			v[0]=-1;
-		if(v[1]==0)
-			v[1]=-1;
-		return pot.U(v);
+		return pot.U(node_values);
 	}
 
 	//message from node 1 to node 2
