@@ -7,14 +7,15 @@ public class pot_func {
 	public static abstract class abstract_pot{
 		//tunable parameter for this potential function
 		public double THETA[];
-		//potential function
-		abstract public double U(int[] node_values);
 		public abstract_pot(double theta[]){
 			THETA = (double[])theta.clone();
 		}
 		public abstract_pot(){
 			THETA = new double[1];
 		}
+		//potential function
+		abstract public double U(int[] node_values);
+		abstract public double alpha(int[] node_values);
 	}
 
 	//===== POTENTIAL FUNCTION CLASS DEFINITIONS =====
@@ -29,6 +30,11 @@ public class pot_func {
 				v[0]=-1;
 			return Math.exp(THETA[0]*v[0]);
 		}
+		public double alpha(int[] v){
+			if(v[0]==0)
+				v[0]=-1;
+			return v[0];
+		}
 	}
 	
 	//----- e_ising
@@ -41,6 +47,24 @@ public class pot_func {
 				if(v[i]==0)
 					v[i]=-1;
 			return Math.exp(THETA[0]*((double)v[0])*((double)v[1]));
+		}
+		public double alpha(int[] v){
+			for(int i=0; i<v.length; i++)
+				if(v[i]==0)
+					v[i]=-1;
+			return ((double)v[0])*((double)v[1]);
+		}
+	}
+	
+	//----- square potential
+	public static class square_pot extends abstract_pot{
+		public square_pot(double theta){
+		}
+		public double U(int[] v){
+			return 0.0;
+		}
+		public double alpha(int[] v){
+			return 0.0;
 		}
 	}
 	

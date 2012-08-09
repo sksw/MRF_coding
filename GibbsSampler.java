@@ -1,133 +1,86 @@
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+
 public class GibbsSampler {
 
 	public static void main(String[] args){
-		test();
-	}
-
-	public static void test(){
-		//simple test of the gibbs sampler using equipotential model
-		int[][] img = new int[512][512];
+		
+		//0.07423857003201752
+		// param 0 E_rook1_ver: 	 0.9874078155960595
+		// param 1 E_rook1_hor: 	 1.1093909472631103
+		// param 2 E_bishop1_diag: 	 0.4876016546382432
+		// param 3 E_bishop1_xdiag:  0.31633943895052447
+		// param 4 E_rook2_ver: 	-0.13196602767754476
+		// param 5 E_rook2_hor: 	-0.06828063646179837
+		
+		MRF mrf = new MRF();
+		mrf.n_struct = graph_struct.DIAMOND2;
+		//mrf.n_struct = graph_struct.ROOK1;
+		//mrf.n_struct = graph_struct.BISHOP1;
+		mrf.c_struct = new LinkedHashMap<String, CliqueStructures.CliquePair>();
+		//set default 0.5
+		mrf.c_struct.put("E_rook1_ver", new CliqueStructures.CliquePair(graph_struct.C_E_r1v, mrf.n_struct, new pot_func.edge_ising_pot(0.9874078155960595)) );
+		mrf.c_struct.put("E_rook1_hor", new CliqueStructures.CliquePair(graph_struct.C_E_r1h, mrf.n_struct, new pot_func.edge_ising_pot(1.1093909472631103)) );
+		mrf.c_struct.put("E_bishop1_diag", new CliqueStructures.CliquePair(graph_struct.C_E_b1d, mrf.n_struct, new pot_func.edge_ising_pot(0.4876016546382432)) );
+		mrf.c_struct.put("E_bishop1_xdiag", new CliqueStructures.CliquePair(graph_struct.C_E_b1x, mrf.n_struct, new pot_func.edge_ising_pot(0.31633943895052447)) );
+		mrf.c_struct.put("E_rook2_ver", new CliqueStructures.CliquePair(graph_struct.C_E_r2v, mrf.n_struct, new pot_func.edge_ising_pot(-0.13196602767754476)) );
+		mrf.c_struct.put("E_rook2_hor", new CliqueStructures.CliquePair(graph_struct.C_E_r2h, mrf.n_struct, new pot_func.edge_ising_pot(-0.06828063646179837)) );
+		
+		int[][] img = new int[64][64];
 		for(int row=0; row<img.length; row++)
 			for(int col=0; col<img[row].length; col++)
 				if(Math.random()>0.5)
 					img[row][col]=1;
 				else
 					img[row][col]=0;
-		double[] theta = {0.857,0.857};
-		int gap = 50;
-		for(int i=0;i<2000/gap;i++){
-			GibbsSampler.gibbssample(theta,1.0,img,gap);
-			ImageOp.saveImage("img/MLE/gibbs/sample_progression_0857","gibbs0857#"+((i+1)*gap)+".png","png",ImageOp.enc_int(img,"BILEVEL"));
-		}
-		/*for(int row=0; row<img.length; row++){
-			System.out.println();
-			for(int col=0; col<img[row].length; col++)
-				if(img[row][col]==0)
-					System.out.print("  ");
-				else
-					System.out.print("X ");
-		}*/
-		//System.out.println(Statistics.t_v(img));
-		//System.out.println(Statistics.t_h(img));
-		//System.out.println(Statistics.t_s(img));
-	}
-	
-	public static void gibbssample(double[] theta, double temperature, int[][] img, int iter, String mode){
-		for(int i=0; i<iter; i++)
-			for(int row=0; row<img.length; row++)
-				for(int col=0; col<img[row].length; col++)
-					if(mode.equals("EQ"))
-						img[row][col] = p_xy_uni(theta,temperature,img,row,col);
-					else if(mode.equals("VH"))
-						img[row][col] = p_xy(theta,temperature,img,row,col);
-					else if(mode.equals("VH"))
-						img[row][col] = p_xy(theta,temperature,img,row,col); //THIS NEEDS CHANGING
-					else
-						img[row][col] = p_xy_uni(theta,temperature,img,row,col);
-	}
-	
-	public static void gibbssample(double[] theta, double temperature, int[][] img, int iter){
-		for(int i=0; i<iter; i++)
-			for(int row=0; row<img.length; row++)
-				for(int col=0; col<img[row].length; col++)
-					if(theta.length==1)
-						img[row][col] = p_xy_uni(theta,temperature,img,row,col);
-					else
-						img[row][col] = p_xy(theta,temperature,img,row,col);
-	}
-	
-	public static int p_xy_uni(double[] theta, double beta, int[][] img, int row, int col){
-		double[] pmf = new double[2];
-		double temp = 0.0;
-		for(int x=0;x<pmf.length;x++){
-			pmf[x] = 1.0;
-			//top
-			if(row-1>-1)
-				pmf[x] = pmf[x]*e(x,img[row-1][col],theta[0],beta);
-			//bottom
-			if(row+1<img.length)
-				pmf[x] = pmf[x]*e(x,img[row+1][col],theta[0],beta);
-			//left
-			if(col-1>-1)
-				pmf[x] = pmf[x]*e(x,img[row][col-1],theta[0],beta);
-			//right
-			if(col+1<img[row].length)
-				pmf[x] = pmf[x]*e(x,img[row][col+1],theta[0],beta);
-			temp = temp+pmf[x];
-		}
-		for(int i=0;i<pmf.length;i++)
-			pmf[i] = pmf[i]/temp;
-		temp = Math.random();
-		if(temp>pmf[0])
-			return 1;
-		else
-			return 0;
-	}
-	
-	public static int p_xy(double[] theta, double beta, int[][] img, int row, int col){
-		double[] pmf = new double[2];
-		double temp = 0.0;
-		for(int x=0;x<pmf.length;x++){
-			pmf[x] = 1.0;
-			//top
-			if(row-1>-1)
-				pmf[x] = pmf[x]*e(x,img[row-1][col],theta[0],beta);
-			//bottom
-			if(row+1<img.length)
-				pmf[x] = pmf[x]*e(x,img[row+1][col],theta[0],beta);
-			//left
-			if(col-1>-1)
-				pmf[x] = pmf[x]*e(x,img[row][col-1],theta[1],beta);
-			//right
-			if(col+1<img[row].length)
-				pmf[x] = pmf[x]*e(x,img[row][col+1],theta[1],beta);
-			temp = temp+pmf[x];
-		}
-		for(int i=0;i<pmf.length;i++)
-			pmf[i] = pmf[i]/temp;
-		temp = Math.random();
-		if(temp>pmf[0])
-			return 1;
-		else
-			return 0;
-	}
-	
-	public static double e(int x, int x_n, double theta, double beta){
-		if(x == 0)
-			x = -1;
-		if(x_n == 0)
-			x_n = -1;
-		return Math.exp(beta*theta*((double)x)*((double)x_n));
-	}
-	
-	public static void gibbsProgression(){
-		double[] param = {0.5,0.5};
-		int[][] img;
 		
-		img = ImageOp.dec_int(ImageOp.to_CS_GRAY(ImageOp.loadImage("img/MLE/gibbs","noise_seed_32.png")),"BILEVEL");
-		for(int i=0;i<25;i++){
-			gibbssample(param,1.0,img,2);
-			ImageOp.saveImage("img/MLE","gibbs32#"+((i+1)*2)+".png","png",ImageOp.enc_int(img,"BILEVEL"));
-		}
+		for(int sweep=0;sweep<1000;sweep++)
+			sweep(img,mrf,2);
+		
+		ImageDAQ.saveImage("img", "test.png", "png", ImageDAQ.enc_int_bw(img));
 	}
+	
+	public static int[][] genSample(int w, int h, MRF mrf, int r, int cycles){
+		int[][] sampImg = new int[w][h];
+		for(int row=0; row<sampImg.length; row++) //seed random image
+			for(int col=0; col<sampImg[row].length; col++)
+				sampImg[row][col] = (int)(Math.random()*r);
+		
+		for(int sweep=0; sweep<cycles; sweep++) //gibbs sample for a certain number of cycles
+			GibbsSampler.sweep(sampImg,mrf,r);
+		
+		return sampImg;
+	}
+
+	public static void sweep(int[][] img, MRF mrf, int r){
+		for(int x=0; x<img.length; x++)
+			for(int y=0; y<img[x].length; y++)
+				img[x][y] = p_xy(x,y,img,mrf,r);
+	}
+	
+	public static int p_xy(int x, int y, int[][] img, MRF mrf, int r){
+		double[] pmf = new double[r];
+		Arrays.fill(pmf,1.0);
+		double sum = 0.0;
+		String config = ImageOp.dnVal(x,y,img,mrf,r);
+		for(int i=0; i<r; i++){
+			config = i + config.substring(1);
+			pmf[i] = U(config,mrf,r);
+			sum = sum + pmf[i];
+		}
+		for(int i=0;i<pmf.length;i++)
+			pmf[i] = pmf[i]/sum;
+		return Utilities.draw(Utilities.cdf(pmf));
+	}
+	
+	public static double U(String config, MRF mrf, int r){
+		double pot = 1.0;
+		HashMap<Integer,Integer> configMap = ImageOp.genCoordMap(config,mrf,r);
+		for(CliqueStructures.CliquePair cliqueType: mrf.c_struct.values())
+			for(int[] offset : cliqueType.offsets)
+				pot = pot * cliqueType.c_pot.U(ImageOp.matchNodeVals(configMap,cliqueType.geo,offset));
+		return pot;
+	}
+
 }

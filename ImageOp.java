@@ -1,140 +1,55 @@
-import java.io.*;
-import javax.imageio.*;
-import java.awt.image.*;
-import java.awt.color.*;
+import java.util.HashMap;
 
-public class ImageOp{
-	
-	//save image to dir/filename
-	public static void saveImage(String dir, String fileName, String type, BufferedImage src){
-		File F = new File(dir);
-		try{
-			if(F.exists()) ImageIO.write(src, type, new File(dir,fileName));
-			else{ F.mkdirs(); ImageIO.write(src, type, new File(dir,fileName)); }
-		}
-		catch (Exception e){
-			System.out.println("error saving image! "+e.getMessage());
-		}
-	}
-	
-	//load image from dir/filename
-	public static BufferedImage loadImage(String dir,String fileName){
-		BufferedImage newImage;
-		try{
-			newImage = ImageIO.read(new File(dir,fileName)); return newImage;
-		}
-		catch (Exception e){
-			System.out.println("error opening image! "+e.getMessage()); return null;
-		}
-	}
-	
-	//convert to CS_GRAY
-	public static BufferedImage to_CS_GRAY(BufferedImage src){ 
-		BufferedImageOp op = new ColorConvertOp(ColorSpace.getInstance(ColorSpace.CS_GRAY),null); 
-	    return op.filter(src, null);
-	}
-	
-	//translate image to black and white int[][]
-	public static int[][] dec_int_bw(BufferedImage src){ 
-		int[] sample = new int[2];
-		int w = src.getWidth(), h = src.getHeight();
-		Raster R = src.getData();
-		int[][] img = new int[w][h];
-		for(int x=0; x<w; x++)
-        	for(int y=0; y<h; y++){
-        		R.getPixel(x,y,sample);
-    			if(sample[0]<128)
-    				img[x][y] = 0;
-    			else
-    				img[x][y] = 1;
-        	}
-        return img;
-	}
-	//encode image from black and white int[][]
-	public static BufferedImage enc_int_bw(int[][] img){
-		int[] sample = new int[2];
-		BufferedImage Img = new BufferedImage(img.length,img[0].length,BufferedImage.TYPE_BYTE_GRAY);
-		WritableRaster R = Img.getRaster();
-		for(int x=0; x<img.length; x++)
-        	for(int y=0; y<img[x].length; y++){
-        		if(img[x][y]==0)
-        			sample[0] = 0;
-        		else
-        			sample[0] = 255;
-        		R.setPixel(x,y,sample);
-        	}
-		Img.setData(R);
-		return Img;
-	}
-	
-	//----- USEFUL FUNCTIONS
+public class ImageOp {
 
-	//generates black and white noise seed
-	public static int[][] seed_bw(int w, int h, double prob_b){
-		int[][] img = new int[w][h];
-		for(int x=0; x<w; x++)
-			for(int y=0; y<h; y++)
-				if(Math.random() > prob_b)
-					img[x][y] = 1;
-				else
-					img[x][y] = 0;
-		return img;
+	public static String dnVal(int x, int y, int[][] img, MRF mrf, int r){
+		String dnString = "";
+		dnString = dnString + img[x][y];
+		for(int[][] neighbours : mrf.n_struct.values())
+			for(int i=0; i<neighbours.length; i++)
+				dnString = dnString + neighbourVal(x,y,img,neighbours[i],r);
+		return dnString;
+	}
+		
+	public static String neighbourVal(int x, int y, int[][] img, int[] offset, int r){
+		int dx = offset[0], dy = offset[1], w = img.length, h = img[0].length;
+		if(x+dx>-1 && y+dy>-1 && x+dx<w && y+dy<h)
+			return Integer.toString(img[x+dx][y+dy],r);
+		else
+			return "_";
 	}
 	
-	//generates black and white barcode image
-	public static int[][] barcode(int w, int h, double prob_b){
-		int[][] img = new int[w][h];
-		for(int y=0; y<h; y++)
-			if(Math.random() > prob_b)
-				for(int x=0; x<w; x++)
-					img[x][y] = 1;
-			else
-				for(int x=0; x<w; x++)
-					img[x][y] = 0;
-		return img;
-	}
-	
-	//segments folder of images into smaller image training set
-	public static void segment(String dir, int[][] training_sizes){ //training_sizes[i][0] = height, training_sizes[i][1] = width
-		File fDir = new File(dir);
-		String[] Images;
-		BufferedImage img;
-		//filter list of returned files for *.png's
-		FilenameFilter filter = new FilenameFilter() {
-		    public boolean accept(File dir, String name) {
-		        return name.endsWith(".png");
-		    }
-		};
-		Images = fDir.list(filter);
-		//----- segment image into subimages
-		for(int i=0; i<Images.length; i++)
-			for(int j=0; j<training_sizes.length; j++){
-				img = ImageOp.loadImage(dir,Images[i]);
-				for(int y=0; y<img.getHeight()/training_sizes[j][0]; y++)
-					for(int x=0; x<img.getWidth()/training_sizes[j][1]; x++)
-						ImageOp.saveImage(dir+"/"+Images[i].replaceFirst("[.][^.]+$","_"+training_sizes[j][0]+"x"+training_sizes[j][1]),(y*img.getWidth()/training_sizes[j][1]+x)+".png","png",
-								img.getSubimage(x*training_sizes[j][1],y*training_sizes[j][0],training_sizes[j][1],training_sizes[j][0]));
-			}
-	}
-	
-	//convert folder of images to black and white
-	public static void toBW(String dir){
-		File fDir = new File(dir);
-		String[] Images;
-		int[][] img;
-		//filter list of returned files for *.png's
-		FilenameFilter filter = new FilenameFilter() {
-		    public boolean accept(File dir, String name) {
-		        return name.endsWith(".png");
-		    }
-		};
-		Images = fDir.list(filter);
-		//----- convert to black and white
-		for(int i=0;i<Images.length;i++){
-			System.out.println(Images[i]+"-->"+Images[i].replaceFirst("[.][^.]+$","_bw.png"));
-			img = dec_int_bw(to_CS_GRAY(loadImage(dir,Images[i])));
-			saveImage(dir,Images[i].replaceFirst("[.][^.]+$", "_bw.png"),"png",enc_int_bw(img));
+	public static int[] matchNodeVals(HashMap<Integer,Integer> map, int[][] cliqueGeo, int[] offset){
+		int[] nodeVals = new int[cliqueGeo.length];
+		for(int i=0; i<cliqueGeo.length; i++){
+			int[] coord = new int[2];
+			coord[0] = offset[0]+cliqueGeo[i][0];
+			coord[1] = offset[1]+cliqueGeo[i][1];
+			nodeVals[i] = map.get(pairHash(coord));
 		}
+		return nodeVals;
 	}
+	
+	public static HashMap<Integer,Integer> genCoordMap(String dnString, MRF mrf, int r){
+		HashMap<Integer,Integer> coordVals = new HashMap<Integer,Integer>();
+		coordVals.put(0,Integer.parseInt(dnString.substring(0,1),r));
+		int inx = 1;
+		for(int[][] neighbours : mrf.n_struct.values())
+			for(int i=0; i<neighbours.length; i++)
+				if(dnString.charAt(inx)=='_')
+					coordVals.put(pairHash(neighbours[i]),-1);
+				else{
+					coordVals.put(pairHash(neighbours[i]),Integer.parseInt(dnString.substring(inx,inx+1),r));
+					inx++;
+				}
+		return coordVals;
+	}
+	
+	public static int pairHash(int[] coord){
+		int x, y;
+		x = Utilities.map_ZtoN(coord[0]);
+		y = Utilities.map_ZtoN(coord[1]);
+		return Utilities.map_NxNtoN(x,y);
+	}
+	
 }
-

@@ -1,7 +1,6 @@
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 
-
 public class Experiments {
 	
 	public static void main(String[] args){
@@ -22,11 +21,11 @@ public class Experiments {
 		String file = "test.png";
 			
 		System.out.println("---------- image io ----------");
-		BufferedImage Test = ImageOp.to_CS_GRAY(ImageOp.loadImage("img",file));
+		BufferedImage Test = ImageDAQ.to_CS_GRAY(ImageDAQ.loadImage("img",file));
 		//ImageOp.printImg(Test,"CS_GRAY");
-		G = ImageOp.dec_Graph(Test,"BILEVEL");
-		G.make4ptEdges(range);
-		System.out.println("<IMPORTED IMAGE INFO> height: "+G.h+" width: "+G.w);
+//		G = ImageOp.dec_Graph(Test,"BILEVEL");
+//		G.make4ptEdges(range);
+//		System.out.println("<IMPORTED IMAGE INFO> height: "+G.h+" width: "+G.w);
 		//outputs imported image
 		/*for(int i=0;i<G.w;i++){
 			System.out.println();
@@ -36,8 +35,8 @@ public class Experiments {
 		}*/
 		
 		String data = "";
-		for(int i=0; i<G.V.size(); i++)
-			data = data+G.V.get(i).val;
+//		for(int i=0; i<G.V.size(); i++)
+//			data = data+G.V.get(i).val;
 		
 		String test;
 		

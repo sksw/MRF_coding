@@ -18,14 +18,14 @@ public class Coder {
 		for(int i=1; i<Data.length(); i++)
 			if(Data.charAt(i) == val){
 				if(run==maxLen){
-					EncodedData = EncodedData + val + Utilities.intToPBS(run,packetWidth-1);
+					EncodedData = EncodedData + val + Utilities.toPString(run,packetWidth-1,2);
 					run = 1;
 				}
 				else
 					run++;
 			}
 			else{
-				EncodedData = EncodedData + val + Utilities.intToPBS(run,packetWidth-1);
+				EncodedData = EncodedData + val + Utilities.toPString(run,packetWidth-1,2);
 				val = Data.charAt(i);
 				run = 1;
 			}
@@ -84,7 +84,7 @@ public class Coder {
 				sum = sum + relFreqCond[i][j];
 			for(int j=0; j<(int)Math.pow(2,blockLength); j++)
 				if(relFreqCond[i][j]!=0)
-					empCondEntropy = empCondEntropy + ((double)relFreqJoint[Integer.parseInt(Utilities.intToPBS(i,blockLength*markovOrder)+Utilities.intToPBS(j,blockLength),2)]/(double)total)
+					empCondEntropy = empCondEntropy + ((double)relFreqJoint[Integer.parseInt(Utilities.toPString(i,blockLength*markovOrder,2)+Utilities.toPString(j,blockLength,2),2)]/(double)total)
 							*Math.log(sum/relFreqCond[i][j])/Math.log(2);
 		}
 		

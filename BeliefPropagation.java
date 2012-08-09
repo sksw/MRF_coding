@@ -3,7 +3,7 @@ public class BeliefPropagation {
 	
 	public static interface BPNode<T> {
 		public double npot(T nVal);
-		public void Z();
+		public double[] Z();
 	}
 	public static interface BPEdge<T> {
 		public double epot(T n1Val, T n2Val);

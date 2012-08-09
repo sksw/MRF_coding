@@ -1,11 +1,171 @@
 import java.io.*;
-import java.util.Scanner;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 public class Est_MLE {
 	
 	public static void main(String[] args) throws IOException{
-		est_MLE("img/MLE/gibbs","img/MLE/sample_images/aerials","EQ");
+		
+		MRF mrf = new MRF();
+		mrf.n_struct = graph_struct.DIAMOND2;
+		mrf.c_struct = new LinkedHashMap<String, CliqueStructures.CliquePair>();
+
+		mrf.c_struct.put("E_rook1_ver", new CliqueStructures.CliquePair(graph_struct.C_E_r1v, mrf.n_struct, new pot_func.edge_ising_pot(1.2)) );
+		mrf.c_struct.put("E_rook1_hor", new CliqueStructures.CliquePair(graph_struct.C_E_r1h, mrf.n_struct, new pot_func.edge_ising_pot(1.2)) );
+		mrf.c_struct.put("E_bishop1_diag", new CliqueStructures.CliquePair(graph_struct.C_E_b1d, mrf.n_struct, new pot_func.edge_ising_pot(1.2)) );
+		mrf.c_struct.put("E_bishop1_xdiag", new CliqueStructures.CliquePair(graph_struct.C_E_b1x, mrf.n_struct, new pot_func.edge_ising_pot(1.2)) );
+		
+		mrf.c_struct.put("E_rook2_ver", new CliqueStructures.CliquePair(graph_struct.C_E_r2v, mrf.n_struct, new pot_func.edge_ising_pot(1.2)) );
+		mrf.c_struct.put("E_rook2_hor", new CliqueStructures.CliquePair(graph_struct.C_E_r2h, mrf.n_struct, new pot_func.edge_ising_pot(1.2)) );
+		//mrf.c_struct.put("E_bishop2_diag", new CliqueStructures.CliquePair(graph_struct.C_E_b2d, mrf.n_struct, new pot_func.edge_ising_pot(1.2)) );
+		//mrf.c_struct.put("E_bishop2_xdiag", new CliqueStructures.CliquePair(graph_struct.C_E_b2x, mrf.n_struct, new pot_func.edge_ising_pot(1.2)) );
+
+		//mrf.c_struct.put("E_knight1_1+2", new CliqueStructures.CliquePair(graph_struct.C_E_k1a, mrf.n_struct, new pot_func.edge_ising_pot(1.2)) );
+		//mrf.c_struct.put("E_knight1_2+1", new CliqueStructures.CliquePair(graph_struct.C_E_k1b, mrf.n_struct, new pot_func.edge_ising_pot(1.2)) );
+		//mrf.c_struct.put("E_knight1_2-1", new CliqueStructures.CliquePair(graph_struct.C_E_k1c, mrf.n_struct, new pot_func.edge_ising_pot(1.2)) );
+		//mrf.c_struct.put("E_knight1_1-2", new CliqueStructures.CliquePair(graph_struct.C_E_k1d, mrf.n_struct, new pot_func.edge_ising_pot(1.2)) );
+
+		System.out.println("LOAD IMAGE");
+		
+		int[][] img = ImageDAQ.dec_int_bw(ImageDAQ.to_CS_GRAY(ImageDAQ.loadImage("img","Opp2.png")));
+		int x = img.length;
+		int y = img[0].length;
+		double alpha = 100.0 * (1.0 / (double)(x*y*mrf.c_struct.size()) ); //could look into this more
+		Est_MLE MLEestimator = new Est_MLE(64,64,64,64,alpha,0.005); //256,500
+		System.out.println("ESTIMATE");
+		double[] theta = MLEestimator.maximumLikelihoodEstimation(mrf,2,img);
+		
+		int i=0;
+		for(Map.Entry<String,CliqueStructures.CliquePair> entry : mrf.c_struct.entrySet()){
+			System.out.println("param "+i+" "+entry.getKey()+": \t"+theta[i]);
+			i++;
+		}
 	}
+	
+	final int w, h;
+	final int numOfSamples, cyclesPerSample;
+	final double alpha, tolerance;
+	public Est_MLE(int x, int y, int sampleSetSize, int sweepsPerGen, double gradientMovementScalar, double errorMarginRatio){
+		w = x;
+		h = y;
+		numOfSamples = sampleSetSize;
+		cyclesPerSample = sweepsPerGen;
+		alpha = gradientMovementScalar;
+		tolerance = errorMarginRatio;
+	}
+	
+	public int totalPossibleSamples(int[][] img){
+		int dx = img.length/w;
+		int dy = img[0].length/h;
+		return dx*dy;
+	}
+	
+	public int[][] getSample(int num, int[][] img){
+		int[][] samp = new int[w][h];
+		int dx = img.length/w;
+		int x = (num%dx)*w;
+		int y = (num/dx)*h;
+		for(int i=0; i<w; i++)
+			for(int j=0; j<h; j++)
+				samp[i][j] = img[x+i][y+j];
+		return samp;
+	}
+	
+	public double[] maximumLikelihoodEstimation(MRF mrf, int r, int[][] img){
+		
+		double[] tObs = getImageStats(mrf,img);
+		double[] mu;
+		double[] d = new double[tObs.length];
+		Arrays.fill(d,0.0);
+		double minError = calcMinError(tObs);
+		double error;
+		double[] theta = Est_LS.leastSquaresEstimation(mrf,r,img); //initial guess at theta parameters, use least squares
+
+		System.out.println("START");
+		do{
+			System.out.println("iteration");
+			for(int i=0; i<theta.length; i++)
+				theta[i] = theta[i]+d[i]*alpha;
+			setParameters(theta,mrf);
+			
+			int inx=0;
+			for(Map.Entry<String,CliqueStructures.CliquePair> entry : mrf.c_struct.entrySet()){
+				System.out.println("param "+inx+" "+entry.getKey()+": \t"+theta[inx]);
+				inx++;
+			}
+			
+			mu = sampAndCollectStats(mrf,r,totalPossibleSamples(img)); //use gibbs sampler to generate samples and collect the statistics
+			for(int i=0; i<tObs.length; i++)
+				d[i] = tObs[i] - mu[i];
+			error = Utilities.l_euclidean(d);
+			
+			for(int i=0; i<tObs.length; i++)
+				System.out.println("tObs "+tObs[i]+" mu "+mu[i]+" d "+d[i]+" e_d "+error);
+			
+		}while(error > minError);
+		
+		return theta;
+	}
+	
+	public double calcMinError(double[] tObs){
+		double[] toleranceVect = new double[tObs.length];
+		for(int i=0; i<tObs.length; i++)
+			toleranceVect[i] = tObs[i]*tolerance;
+		return Utilities.l_euclidean(toleranceVect);
+	}
+	
+	public void setParameters(double[] theta, MRF mrf){
+		int i=0;
+		for(Map.Entry<String,CliqueStructures.CliquePair> entry : mrf.c_struct.entrySet()){
+			entry.getValue().c_pot.THETA[0] = theta[i];
+			i++;
+		}
+	}
+	
+	public double[] getImageStats(MRF mrf, int[][] img){
+		int totalSamples = totalPossibleSamples(img);
+		int[][] samp;
+		double[] stats = new double[mrf.c_struct.size()];
+		double[] sampleStats;
+		Arrays.fill(stats,0.0);
+		for(int i=0; i<totalSamples; i++){
+			samp = getSample(i,img);
+			sampleStats = Statistics.getStats(mrf,samp);
+			for(int j=0; j<stats.length; j++)
+				stats[j] = stats[j] + sampleStats[j];
+		}
+		for(int j=0; j<stats.length; j++)
+			stats[j] = stats[j]/totalSamples;
+		return stats;
+	}
+	
+	public double[] sampAndCollectStats(MRF mrf, int r, int totalSamps){
+		int[][] samp;
+		double[] stats = new double[mrf.c_struct.size()];
+		Arrays.fill(stats,0.0);
+		double[] sampStats;
+		for(int i=0; i<numOfSamples; i++){ //generate certain number of samples under given theta
+			System.out.print(".");
+			samp = GibbsSampler.genSample(w,h,mrf,r,cyclesPerSample);
+			/*
+			System.out.println("\t new sample");
+			for(int x=0; x<samp.length; x++){
+				System.out.println();
+				for(int y=0; y<samp[x].length; y++)
+					System.out.print(" "+samp[x][y]);
+			}
+			*/
+			sampStats = Statistics.getStats(mrf,samp);
+			for(int j=0; j<stats.length; j++)
+				stats[j] = stats[j] + sampStats[j];
+		}
+		for(int i=0; i<stats.length; i++)
+			stats[i] = stats[i]/(double)totalSamps;
+		return stats;
+	}
+	
+	/*
 	
 	public static void est_MLE(String expDir, String sampleDir, String mode) throws IOException{
 		File fDir = new File(sampleDir);
@@ -26,7 +186,7 @@ public class Est_MLE {
 		
 		System.out.println("<PROCESSING "+Images.length+" IMAGES>");
 		for(int i=0;i<Images.length;i++){
-			dim = ImageOp.loadImage(sampleDir,Images[i]).getWidth();
+			dim = ImageDAQ.loadImage(sampleDir,Images[i]).getWidth();
 			if(dim==1024){
 				trainingSet = "_64x64";
 				imgSize = 64;
@@ -43,7 +203,7 @@ public class Est_MLE {
 			alpha = 1.0 / ( (double)((imgSize-1)*(imgSize)*2+(imgSize-1)*2) * 2.0 );
 			setSize = (dim*dim)/(imgSize*imgSize);
 			tObs = getTrainStatistics(sampleDir+"/"+Images[i].replaceFirst("[.][^.]+$",trainingSet),mode); //mode dependent
-			theta = Est_LS.ising4ptEstimation(ImageOp.to_CS_GRAY(ImageOp.loadImage(sampleDir,Images[i])),mode); //mode dependent
+			theta = Est_LS.ising4ptEstimation(ImageDAQ.to_CS_GRAY(ImageDAQ.loadImage(sampleDir,Images[i])),mode); //mode dependent
 			tolerance = 0.0;
 			for(int j=0;j<tObs.length;j++)
 				tolerance = tolerance+tObs[j];
@@ -111,7 +271,7 @@ public class Est_MLE {
 			t_total = new int[theta.length];
 			for(int i=0;i<setSize;i++){
 				//loads seed
-				img = ImageOp.dec_int(ImageOp.to_CS_GRAY(ImageOp.loadImage("img/MLE/gibbs","noise_seed_"+imgSize+".png")),"BILEVEL");
+				img = ImageDAQ.dec_int(ImageDAQ.to_CS_GRAY(ImageDAQ.loadImage("img/MLE/gibbs","noise_seed_"+imgSize+".png")),"BILEVEL");
 				//50 iterations of full gibbs sampler sweeps with no annealing
 				GibbsSampler.gibbssample(theta,1.0,img,50,mode); //GIBBS SAMPLER NOT READY FOR VHS
 				//get statistics --- THIS SHOULD BE A MODE DEPENDENT FUNCTION IN STATS CLASS
@@ -128,7 +288,7 @@ public class Est_MLE {
 				}
 				else
 					t_total[0] = t_total[0] + Statistics.t_v(img) + Statistics.t_h(img);
-				ImageOp.saveImage(expDir+"/learning_"+title+"_"+imgSize+"x"+imgSize+"/it"+learningIter,"s"+i+".png","png",ImageOp.enc_int(img,"BILEVEL"));			
+				ImageDAQ.saveImage(expDir+"/learning_"+title+"_"+imgSize+"x"+imgSize+"/it"+learningIter,"s"+i+".png","png",ImageDAQ.enc_int(img,"BILEVEL"));			
 			}
 			//calculate directional derivatives
 			totalRateOfChange = 0.0;
@@ -221,7 +381,7 @@ public class Est_MLE {
 			t_total = new int[theta.length];
 			for(int i=0;i<setSize;i++){
 				//loads seed
-				img = ImageOp.dec_int(ImageOp.to_CS_GRAY(ImageOp.loadImage("img/MLE/gibbs","noise_seed_"+imgSize+".png")),"BILEVEL");
+				img = ImageDAQ.dec_int(ImageDAQ.to_CS_GRAY(ImageDAQ.loadImage("img/MLE/gibbs","noise_seed_"+imgSize+".png")),"BILEVEL");
 				//50 iterations of full gibbs sampler sweeps with no annealing
 				GibbsSampler.gibbssample(theta,1.0,img,50);
 				//get statistics
@@ -232,18 +392,18 @@ public class Est_MLE {
 					t_total[1] = t_total[1] + Statistics.t_h(img);
 				}
 				//save sampled image
-				/*
-				System.out.println("\n\n");
-				for(int row=0; row<img.length; row++){
-					System.out.println();
-					for(int col=0; col<img[row].length; col++)
-						if(img[row][col]==0)
-							System.out.print("  ");
-						else
-							System.out.print("X ");
-				}
-				*/
-				ImageOp.saveImage("img/MLE/gibbs/learning_"+imgSize+"x"+imgSize+"/it"+learningIter,"s"+i+".png","png",ImageOp.enc_int(img,"BILEVEL"));			
+				
+				//System.out.println("\n\n");
+				//for(int row=0; row<img.length; row++){
+				//	System.out.println();
+				//	for(int col=0; col<img[row].length; col++)
+				//		if(img[row][col]==0)
+				//			System.out.print("  ");
+				//		else
+				//			System.out.print("X ");
+				//}
+
+				ImageDAQ.saveImage("img/MLE/gibbs/learning_"+imgSize+"x"+imgSize+"/it"+learningIter,"s"+i+".png","png",ImageDAQ.enc_int(img,"BILEVEL"));			
 			}
 			//calculate directional derivatives
 			totalRateOfChange = 0.0;
@@ -326,7 +486,7 @@ public class Est_MLE {
 		int t_v_total, t_h_total, t_s_total;
 		t_v_total = 0; t_h_total=0; t_s_total=0;
 		for(int i=0;i<trainingImages.length;i++){
-			img = ImageOp.dec_int(ImageOp.to_CS_GRAY(ImageOp.loadImage(dir,trainingImages[i])),"BILEVEL");
+			img = ImageDAQ.dec_int(ImageDAQ.to_CS_GRAY(ImageDAQ.loadImage(dir,trainingImages[i])),"BILEVEL");
 			t_v_total = t_v_total + Statistics.t_v(img);
 			t_h_total = t_h_total + Statistics.t_h(img);
 			t_s_total = t_s_total + Statistics.t_s(img);
@@ -372,7 +532,7 @@ public class Est_MLE {
 		//(512x512)/(16x16)=1024, 2^(9+9)/2^(4+4) = 2^10 = 32^2 = (2^5)^2
 		t_v_total = 0; t_h_total=0; t_s_total=0;
 		for(int i=0;i<1024;i++){
-			img = ImageOp.dec_int(ImageOp.to_CS_GRAY(ImageOp.loadImage("img/MLE/train_16x16",i+".png")),"BILEVEL");
+			img = ImageDAQ.dec_int(ImageDAQ.to_CS_GRAY(ImageDAQ.loadImage("img/MLE/train_16x16",i+".png")),"BILEVEL");
 			t_v_total = t_v_total + Statistics.t_v(img);
 			t_h_total = t_h_total + Statistics.t_h(img);
 			t_s_total = t_s_total + Statistics.t_s(img);
@@ -387,7 +547,7 @@ public class Est_MLE {
 		//(512x512)/(32x32)=256, 2^(9+9)/2^(5+5) = 2^8 = 16^2 = (2^4)^2
 		t_v_total = 0; t_h_total=0; t_s_total=0;
 		for(int i=0;i<256;i++){
-			img = ImageOp.dec_int(ImageOp.to_CS_GRAY(ImageOp.loadImage("img/MLE/train_32x32",i+".png")),"BILEVEL");
+			img = ImageDAQ.dec_int(ImageDAQ.to_CS_GRAY(ImageDAQ.loadImage("img/MLE/train_32x32",i+".png")),"BILEVEL");
 			t_v_total = t_v_total + Statistics.t_v(img);
 			t_h_total = t_h_total + Statistics.t_h(img);
 			t_s_total = t_s_total + Statistics.t_s(img);
@@ -415,7 +575,7 @@ public class Est_MLE {
 		double theta;
 		String DATA = "";
 		for(int i=0; i<Images.length; i++){
-			dim = ImageOp.loadImage("img/sample_images/"+dir,Images[i]).getWidth();
+			dim = ImageDAQ.loadImage("img/sample_images/"+dir,Images[i]).getWidth();
 			if(dim==1024){
 				trainingSet = "_64x64";
 			}
@@ -447,5 +607,6 @@ public class Est_MLE {
 		out.write(DATA);
 		out.close();
 	}
+	*/
 	
 }

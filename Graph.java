@@ -31,14 +31,14 @@ public class Graph {
 	}
 	
 	//brute force belief calculation
-	public static double[] belief_BF(SuperNode A, ArrayList<Node> V, ArrayList<Edge> E){
+	public double[] belief_BF(SuperNode A){
 		//----- get radix
 		int r = V.get(0).R;
 		double[] Z_A = new double[(int)Math.pow(r,A.V.size())];
 		Arrays.fill(Z_A,0.0);
 		double pot;
 		//----- get node list of set A
-		List<Integer> Nodes = new ArrayList<Integer>();
+		List<Integer> Nodes = new ArrayList<Integer>(0);
 		for(int i=0; i<A.V.size(); i++)
 			Nodes.add(A.V.get(i).ID);
 		//----- for every possible configuration of set A

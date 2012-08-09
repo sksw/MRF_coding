@@ -12,13 +12,13 @@ public class Node extends CliqueStructures.Clique implements BeliefPropagation.B
 
 	public Node(int num, int data, int range){
 		super(range);
-		nodes.add(this);
+		//nodes.add(this);
 		ID = num;
 		VAL = data;
 		//isObs = false;
 		dN = new ArrayList<Edge>(0);
 		Z = new double[R];
-		sf = new double[R]; Arrays.fill(sf,1.0);
+		//sf = new double[R]; Arrays.fill(sf,1.0);
 		nodes.add(this);
 	}
 	
@@ -26,14 +26,15 @@ public class Node extends CliqueStructures.Clique implements BeliefPropagation.B
 	public double npot(Integer v){ //relying on autoboxing!
 		int[] node_values = new int[1];
 		node_values[0] = v.intValue();
-		return sf[v.intValue()]*pot.U(node_values);
+		//return sf[v.intValue()]*pot.U(node_values);
+		return pot.U(node_values);
 	}
 	
 	//belief propagation
-	public void Z(){
-		Z(false);
+	public double[] Z(){
+		return Z(false);
 	}
-	public void Z(boolean fresh){
+	public double[] Z(boolean fresh){
 		for(int i=0; i<Z.length; i++){
 			Z[i] = npot(i);
 			for(int j=0; j<dN.size(); j++)
@@ -42,6 +43,7 @@ public class Node extends CliqueStructures.Clique implements BeliefPropagation.B
 				else
 					Z[i] = Z[i] * dN.get(j).get_m12(i,j,fresh);
 		}
+		return Z;
 	}
 	
 	//find edge that links with a particular neighbour

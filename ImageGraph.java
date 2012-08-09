@@ -8,15 +8,16 @@ public class ImageGraph extends Graph{
 	public Node[][] img_nodes;
 
 	//default constructor
-	public ImageGraph(int width, int height){
+	public ImageGraph(int width, int height, int range){
 		super();
 		w = width;
 		h = height;
+		r = range;
 		img_nodes = new Node[w][h];
 	}
 	//construct graph from 2D int[][]
 	public ImageGraph(int img[][], int range){
-		this(img.length,img[0].length);
+		this(img.length,img[0].length,range);
 		constructFrom2DIntA(img,range);
 	}
 	
@@ -43,15 +44,15 @@ public class ImageGraph extends Graph{
 				img_nodes[x][y] = Pix;
 			}
 	}
-
+	
 	//output graph
 	public void print(){
 		for(int y=0; y<h; y++)
 			for(int x=0; x<w; x++)
 				if(x!=w-1)
-					System.out.print(V.get(y*w+x).VAL+" ");
+					System.out.print(img_nodes[x][y].VAL+" ");
 				else
-					System.out.print(V.get(y*w+x).VAL+"\n");
+					System.out.print(img_nodes[x][y].VAL+"\n");
 	}
 
 }
